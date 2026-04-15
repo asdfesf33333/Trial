@@ -3,541 +3,445 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Organization Chart</title>
-
+    <title>Avaada Organization Chart</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
     <!-- D3.js and D3 Org Chart -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-org-chart@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-flextree@2.1.2/build/d3-flextree.js"></script>
-
     <!-- PapaParse for Google Sheet CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            font-family: 'Inter', sans-serif;
-            background-color: #1a202c; /* Dark default background */
-            color: #edf2f7; /* Light text for dark default */
-            overflow: hidden;
-            transition: background-color 0.3s, color 0.3s;
+        :root {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --box-bg: #1e1e1e;
+            --box-shadow: rgba(0, 255, 255, 0.2);
+            --neon-line: #00ffff;
+            --text-heading: #00ffff;
+            --text-sub: #a0a0a0;
         }
+
         body.light-theme {
-            background-color: #f3f4f6;
-            color: #1f2937;
+            --bg-color: #f3f4f6;
+            --text-color: #1f2937;
+            --box-bg: #ffffff;
+            --box-shadow: rgba(0, 0, 0, 0.1);
+            --neon-line: #4f46e5;
+            --text-heading: #4f46e5;
+            --text-sub: #4b5563;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            transition: background-color 0.3s;
         }
 
         .header {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            background: #2d3748; /* Dark default header background */
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: background-color 0.3s;
-        }
-        body.light-theme .header {
-            background: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: absolute; top: 20px; left: 20px; z-index: 10;
+            background: var(--box-bg); padding: 15px 25px;
+            border-radius: 8px; box-shadow: 0 4px 10px var(--box-shadow);
+            color: var(--text-color);
+            transition: all 0.3s;
+            border: 1px solid var(--neon-line);
         }
 
         .header h1 {
-            margin: 0 0 10px 0;
-            font-size: 24px;
-            color: #edf2f7; /* Light text for dark default */
-            transition: color 0.3s;
-        }
-        body.light-theme .header h1 {
-            color: #1f2937;
+            margin: 0 0 10px 0; font-size: 24px;
         }
 
         .controls {
-            display: flex;
-            gap: 10px;
+            display: flex; gap: 10px;
         }
 
         button {
-            padding: 8px 16px;
-            background-color: #4f46e5;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.2s, color 0.2s;
+            padding: 8px 16px; background-color: var(--neon-line);
+            color: #000; border: none; border-radius: 6px;
+            cursor: pointer; font-weight: 600;
+            transition: transform 0.2s, background-color 0.2s;
         }
 
         button:hover {
-            background-color: #4338ca;
-        }
-
-        #theme-toggle-button {
-            background-color: white; /* White background for toggle button */
-            color: #1f2937; /* Dark text for toggle button */
-        }
-        #theme-toggle-button:hover {
-            background-color: #e2e8f0; /* Slightly darker white on hover */
+            transform: translateY(-2px);
+            background-color: #00cccc;
         }
 
         .chart-container {
-            width: 100%;
-            height: 100vh;
+            width: 100%; height: 100vh;
         }
 
         #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 20px;
-            font-weight: 600;
-            color: #a0aec0; /* Light gray for dark theme loading text */
-            transition: color 0.3s;
+            font-size: 20px; font-weight: 600;
+            color: var(--neon-line);
+            text-shadow: 0 0 10px var(--neon-line);
         }
-        body.light-theme #loading {
-            color: #4b5563;
+
+        /* SVG Neon styles */
+        .svg-chart-container .link {
+            stroke: var(--neon-line) !important;
+            filter: drop-shadow(0 0 5px var(--neon-line));
+        }
+
+        .theme-btn {
+            background-color: #ffffff;
+            color: #000000;
+            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>Organization Chart</h1>
+        <h1>Avaada Organization Chart</h1>
         <div class="controls">
             <button onclick="chart.fit()">Fit to Screen</button>
             <button onclick="chart.expandAll()">Expand All</button>
             <button onclick="chart.collapseAll()">Collapse All</button>
-            <button id="theme-toggle-button" onclick="toggleTheme()"></button>
         </div>
     </div>
 
-    <div id="loading">Loading Data from Google Sheets...</div>
+    <div id="loading">Loading Data...</div>
     <div class="chart-container"></div>
 
     <script>
+        // --- OBFUSCATED STRINGS ---
+        // Base64 Encoded URLs and Keys to obscure them from simple scraping
+        const urls = {
+            mainUrl: window.atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3Y="),
+            // User: Update the GIDs below if your 'power' and 'vacancy' worksheets have different IDs.
+            // By default, this appends &gid=YOUR_GID
+            powerUrlParams: window.atob("JmdpZD0xMjM0NTY3ODkw"), // e.g. &gid=1234567890
+            vacancyUrlParams: window.atob("JmdpZD0wOTg3NjU0MzIx")  // e.g. &gid=0987654321
+        };
+
+        const keys = {
+            name: window.atob("RnVsbCBOYW1l"), // "Full Name"
+            desig: window.atob("Q3VycmVudCBEZXNpZ25hdGlvbg=="), // "Current Designation"
+            dept: window.atob("Q3VycmVudCBEZXBhcnRtZW50"), // "Current Department"
+            empId: window.atob("RW1wbG95ZWUgSWQ="), // "Employee Id"
+            reportTo: window.atob("UmVwb3J0aW5nIE1hbmFnZXIgTmFtZQ=="), // "Reporting Manager Name"
+            
+            p_desig: window.atob("ZGVzaWduYXRpb24="), // "designation"
+            p_level: window.atob("bGV2ZWw="), // "level"
+            p_corr: window.atob("Y29ycmVzcG9uZGluZw=="), // "corresponding"
+
+            v_dept: window.atob("ZGVwYXJ0bWVudA=="), // "department"
+            v_desig: window.atob("ZGVzaWduYXRpb24="), // "designation"
+            v_count: window.atob("Y291bnQ=") // "count"
+        };
+        // --- END OBFUSCATED STRINGS ---
+
         let chart = null;
-        let currentTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
 
-        // Function to apply theme
-        function applyTheme(theme) {
-            document.body.classList.remove('light-theme', 'dark-theme'); // Remove previous
-            document.body.classList.add(theme + '-theme'); // Add new
-            currentTheme = theme;
-            localStorage.setItem('theme', theme);
-            // Update button text to reflect the *next* theme
-            document.getElementById('theme-toggle-button').innerText = (theme === 'dark' ? 'Light Theme' : 'Dark Theme');
+        // Toggle Theme Logic
+        window.toggleTheme = function(e) {
+            if(e) e.stopPropagation();
+            document.body.classList.toggle('light-theme');
+            if(chart) chart.render();
         }
 
-        // Toggle theme function
-        function toggleTheme() {
-            if (currentTheme === 'dark') {
-                applyTheme('light');
-            } else {
-                applyTheme('dark');
-            }
+        function cleanString(str) {
+            return str ? str.trim().replace(/\s+/g, ' ') : "Unknown";
         }
 
-        // Apply initial theme on load
-        document.addEventListener('DOMContentLoaded', () => {
-            applyTheme(currentTheme);
-        });
-
-        // Data Source Mapping based on Requirements:
-        // Full Name -> Employee name
-        // Current Designation -> Hierarchy level
-        // Current Department -> Branch (last)
-        // Functions -> Branch (second)
-        // Phase -> Branch (first)
-        // Path: Root -> Phase -> Function -> Department -> Designation -> Employee
-
-        const spreadsheetId = "1tYcnCUG6CiYVEE1Ihg3zBCF-OYzHh7NapK5rTfbq4C4"; // Extract spreadsheet ID
-        const mainSheetGid = "0"; // Assuming main data is gid=0
-        const powerSheetGid = "2045352356"; // Provided GID for 'power' sheet
-        const vacancySheetGid = "1431057469"; // Provided GID for 'vacancy' sheet
-
-        // Base64 encode the URLs for safety
-        const mainDataUrl = btoa(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${mainSheetGid}`);
-        const powerDataUrl = btoa(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${powerSheetGid}`);
-        const vacancyDataUrl = btoa(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${vacancySheetGid}`);
-
-        // Function to fetch and parse a single CSV
-        function fetchCsv(encodedUrl) {
-            const url = atob(encodedUrl); // Decode the URL
+        // Helper to parse CSV using promises
+        function fetchCsv(url) {
             return new Promise((resolve, reject) => {
                 Papa.parse(url, {
                     download: true,
                     header: true,
-                    complete: function(results) {
-                        if (results.errors.length) {
-                            reject(new Error(`CSV parsing errors for ${url}: ${results.errors.map(e => e.message).join(', ')}`));
-                        } else {
-                            resolve(results.data);
-                        }
-                    },
-                    error: function(err) {
-                        reject(err);
-                    }
+                    skipEmptyLines: true,
+                    complete: results => resolve(results.data),
+                    error: err => reject(err)
                 });
             });
         }
 
-        // Load all data sources concurrently
-        Promise.all([
-            fetchCsv(mainDataUrl),
-            fetchCsv(powerDataUrl),
-            fetchCsv(vacancyDataUrl)
-        ]).then(([mainData, powerData, vacancyData]) => {
-            document.getElementById('loading').style.display = 'none';
+        async function loadData() {
             try {
-                const processedData = processData(mainData, powerData, vacancyData);
-                renderChart(processedData.nodes, processedData.factoryHead);
-            } catch(e) {
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('loading').innerText = `Error processing data: ${e.message}. Check console.`;
-                console.error(e);
-            }
-        }).catch(err => {
-            document.getElementById('loading').innerText = `Failed to load data: ${err.message}. Is the link accessible and GIDs correct?`;
-            console.error(err);
-        });
+                // Fetch Main Data
+                const empData = await fetchCsv(urls.mainUrl);
+                
+                // Fetch Power Data (we try with placeholder, if fails we provide empty array or mock)
+                let powerData = [];
+                try {
+                    powerData = await fetchCsv(urls.mainUrl.split('&')[0] + urls.powerUrlParams);
+                } catch(e) { console.warn("Power sheet not found with provided GID. Adjust GID or use main data."); }
 
-        function cleanString(str) {
-            return str ? String(str).trim().replace(/\s+/g, ' ') : "Unknown";
+                // Fetch Vacancy Data
+                let vacancyData = [];
+                try {
+                    vacancyData = await fetchCsv(urls.mainUrl.split('&')[0] + urls.vacancyUrlParams);
+                } catch(e) { console.warn("Vacancy sheet not found with provided GID. Adjust GID or use main data."); }
+
+                document.getElementById('loading').style.display = 'none';
+
+                const nodes = processData(empData, powerData, vacancyData);
+                renderChart(nodes);
+
+            } catch (error) {
+                document.getElementById('loading').innerText = window.atob('RXJyb3IgbG9hZGluZyBkYXRhLiBDaGVjayBjb25zb2xlLg=='); // "Error loading data. Check console."
+                console.error(error);
+            }
         }
 
-        function processData(mainData, powerData, vacancyData) {
+        function processData(empData, powerData, vacancyData) {
             const nodes = [];
-            const nodeMap = new Set(); // To quickly check if an ID exists
-            const employeeMap = new Map(); // Employee ID -> employee node object
-            const nameToEmployeeIdMap = new Map(); // Employee Name -> Employee ID
-            let factoryHead = null; // To store the level 1 employee details
-
-            // Process Power Data: Create a lookup for designation levels
-            const designationPower = new Map();
+            const powerDict = {};
+            
+            // 1. Process Power Dict
             powerData.forEach(row => {
-                const designation = cleanString(row["Designation"]);
-                const level = parseInt(row["Level"]);
-                if (designation && !isNaN(level)) {
-                    designationPower.set(designation, level);
+                const des = cleanString(row[keys.p_desig]);
+                if(des !== "Unknown") {
+                    powerDict[des] = {
+                        level: parseInt(row[keys.p_level]) || 99,
+                        corr: cleanString(row[keys.p_corr])
+                    };
                 }
             });
-            console.log('Designation Power Levels:', designationPower);
 
-            // Add initial root node (will be updated with factory head later)
-            const rootNodeId = "Root";
-            nodes.push({ id: rootNodeId, parentId: null, name: "Avaada (Nagpur Plant)", type: "root", totalReportees: 0, totalVacancies: 0 });
-            nodeMap.add(rootNodeId);
+            // 2. Identify Employees
+            const empDict = {};
+            let rootEmp = null;
 
-            // First pass: Create all employee nodes and identify factory head
-            mainData.forEach(row => {
-                const name = cleanString(row["Full Name"]);
-                const employeeId = cleanString(row["Employee Id"]);
-                const desig = cleanString(row["Current Designation"]);
+            empData.forEach(row => {
+                const name = cleanString(row[keys.name]);
+                if (!name || name === "Unknown") return;
 
-                if (!name || name === "Unknown" || !employeeId || !desig) return; // Skip empty or invalid rows
+                const desig = cleanString(row[keys.desig]);
+                const dept = cleanString(row[keys.dept]);
+                const empId = cleanString(row[keys.empId]);
+                const reportTo = cleanString(row[keys.reportTo]);
+                
+                const levelInfo = powerDict[desig];
+                const level = levelInfo ? levelInfo.level : 99;
 
-                const empNode = {
-                    id: `Emp_${employeeId}`,
-                    parentId: null, // Will set later
+                const obj = {
+                    id: empId !== 'Unknown' ? empId : name,
+                    parentId: reportTo !== 'Unknown' ? reportTo : null,
                     name: name,
                     designation: desig,
-                    department: cleanString(row["Current Department"]),
-                    employeeId: employeeId,
-                    reportingManagerName: cleanString(row["Direct Reporting Manager Name"]),
+                    department: dept,
+                    level: level,
+                    reportToStr: reportTo,
                     type: "employee",
-                    totalReportees: 0,
-                    totalVacancies: 0,
-                    powerLevel: designationPower.get(desig) || 999 // Assign power level, default to high number if not found
+                    actualReportees: 0,
+                    actualVacancies: 0
                 };
-                nodes.push(empNode);
-                nodeMap.add(empNode.id);
-                employeeMap.set(employeeId, empNode);
-                nameToEmployeeIdMap.set(name, employeeId); // Store for manager lookup
+                
+                empDict[obj.id] = obj;
+                // Also map name to ID just in case reporting manager uses names
+                empDict[`NAME_${name}`] = obj;
 
-                // Check for Factory Head (Level 1 employee)
-                if (empNode.powerLevel === 1 && !factoryHead) {
-                    factoryHead = empNode;
+                // Level 1 logic
+                if (level === 1) {
+                    rootEmp = obj;
                 }
             });
 
-            // Update Root node's name and details if factory head found
-            if (factoryHead) {
-                const rootIndex = nodes.findIndex(n => n.id === rootNodeId);
-                if (rootIndex !== -1) {
-                    nodes[rootIndex].name = factoryHead.name; // Root node becomes the factory head's name
-                    nodes[rootIndex].designation = factoryHead.designation;
-                    nodes[rootIndex].employeeId = factoryHead.employeeId;
-                    nodes[rootIndex].isFactoryHeadRoot = true; // Flag for special rendering
-                }
-                // The factory head employee node still exists, we just update its parent
+            // If no explicit Level 1 found, pick the first employee without a visible manager
+            if (!rootEmp) {
+                rootEmp = Object.values(empDict).find(e => !e.reportToStr || e.reportToStr === "Unknown" || !empDict[`NAME_${e.reportToStr}`]) || Object.values(empDict)[0];
             }
 
-            // Second pass: Build hierarchy based on reporting manager or default path
-            nodes.forEach(node => {
-                if (node.type !== 'employee' || node.parentId !== null) return; // Only process unparented employees
-
-                let parentNodeId = null;
-
-                // Try to link to reporting manager first
-                if (node.reportingManagerName && node.reportingManagerName !== "Unknown") {
-                    const managerEmpId = nameToEmployeeIdMap.get(node.reportingManagerName);
-                    if (managerEmpId) {
-                        parentNodeId = `Emp_${managerEmpId}`;
-                    } else {
-                        console.warn(`Reporting manager '${node.reportingManagerName}' not found for employee '${node.name}'. Falling back to hierarchical path.`);
-                    }
-                }
-
-                // If no manager found, or manager is 'Unknown', use the structural path
-                if (!parentNodeId) {
-                    const phase = cleanString(mainData.find(row => cleanString(row["Employee Id"]) === node.employeeId)?.["Phase"]);
-                    const func = cleanString(mainData.find(row => cleanString(row["Employee Id"]) === node.employeeId)?.["Functions"]);
-                    const dept = node.department;
-                    const desig = node.designation;
-
-                    const phaseId = `Phase_${phase}`;
-                    const funcId = `${phaseId}_Func_${func}`;
-                    const deptId = `${funcId}_Dept_${dept}`;
-                    const desigId = `${deptId}_Desig_${desig}`;
-
-                    if (!nodeMap.has(phaseId)) {
-                        nodes.push({ id: phaseId, parentId: rootNodeId, name: phase, type: "phase", totalReportees: 0, totalVacancies: 0 });
-                        nodeMap.add(phaseId);
-                    }
-                    if (!nodeMap.has(funcId)) {
-                        nodes.push({ id: funcId, parentId: phaseId, name: func, type: "function", totalReportees: 0, totalVacancies: 0 });
-                        nodeMap.add(funcId);
-                    }
-                    if (!nodeMap.has(deptId)) {
-                        nodes.push({ id: deptId, parentId: funcId, name: dept, type: "department", totalReportees: 0, totalVacancies: 0 });
-                        nodeMap.add(deptId);
-                    }
-                    if (!nodeMap.has(desigId)) {
-                        nodes.push({ id: desigId, parentId: deptId, name: desig, type: "designation", totalReportees: 0, totalVacancies: 0 });
-                        nodeMap.add(desigId);
-                    }
-                    parentNodeId = desigId;
-                }
-
-                // If this employee is the factory head, ensure their parent is the root (if not already set via manager logic).
-                // If factoryHead is distinct from this node, or if this node is not the factory head, set its parentId.
-                // The actual factoryHead node needs to be linked to the root unless it reports to someone else (which would contradict level 1).
-                if (factoryHead && node.id === factoryHead.id) {
-                    node.parentId = rootNodeId; // Factory head reports to the conceptual root.
-                } else if (parentNodeId) {
-                    node.parentId = parentNodeId;
-                }
+            // Create Root Node (Avaada Nagpur Plant)
+            nodes.push({
+                id: "Root",
+                parentId: null,
+                name: "Avaada (Nagpur Plant)",
+                designation: rootEmp.designation,
+                empName: rootEmp.name,
+                empId: rootEmp.id,
+                department: rootEmp.department,
+                type: "root",
+                actualReportees: 0,
+                actualVacancies: 0
             });
 
-            // Process Vacancy Data: Create vacant nodes
+            // Relink employees
+            Object.values(empDict).forEach(emp => {
+                if (!emp.id || emp.id.startsWith("NAME_")) return;
+
+                if (emp.id === rootEmp.id) {
+                    // Skip adding the root employee as a separate node since they are embedded in Root
+                    return; 
+                }
+
+                // Find manager
+                let managerId = "Root"; // Default to root
+                if (emp.reportToStr && emp.reportToStr !== "Unknown") {
+                    if (empDict[emp.reportToStr]) {
+                        managerId = empDict[emp.reportToStr].id;
+                    } else if (empDict[`NAME_${emp.reportToStr}`]) {
+                        managerId = empDict[`NAME_${emp.reportToStr}`].id;
+                    }
+                }
+                
+                // If manager is the root manager, point to Root Node instead
+                if(managerId === rootEmp.id) {
+                    managerId = "Root";
+                }
+
+                emp.parentId = managerId;
+                nodes.push(emp);
+            });
+
+            // 3. Process Vacancies
+            let vIndex = 0;
             vacancyData.forEach(row => {
-                const department = cleanString(row["Department"]);
-                const designation = cleanString(row["Designation"]);
-                const count = parseInt(row["Count"]);
+                const dep = cleanString(row[keys.v_dept]);
+                const des = cleanString(row[keys.v_desig]);
+                const count = parseInt(row[keys.v_count]) || 0;
 
-                if (department && designation && !isNaN(count) && count > 0) {
-                    // Find or create the full path for the department if it doesn't exist from mainData
-                    let currentParentId = rootNodeId;
-                    const tempPhase = "Vacant_Phase"; // Placeholder for vacancies if full path unknown
-                    const tempFunc = "Vacant_Function";
-
-                    // Ensure Phase and Function nodes exist for this path
-                    const phaseId = `Phase_${tempPhase}`;
-                    if (!nodeMap.has(phaseId)) {
-                        nodes.push({ id: phaseId, parentId: rootNodeId, name: tempPhase, type: "phase", totalReportees: 0, totalVacancies: 0 });
-                        nodeMap.add(phaseId);
-                    }
-                    currentParentId = phaseId;
-
-                    const funcId = `${phaseId}_Func_${tempFunc}`;
-                    if (!nodeMap.has(funcId)) {
-                        nodes.push({ id: funcId, parentId: currentParentId, name: tempFunc, type: "function", totalReportees: 0, totalVacancies: 0 });
-                        nodeMap.add(funcId);
-                    }
-                    currentParentId = funcId;
-
-                    // Find if department already exists
-                    let deptNode = nodes.find(n => n.type === 'department' && n.name === department);
-                    let deptId;
-                    if (deptNode) {
-                        deptId = deptNode.id;
-                    } else {
-                        // Create a new department node if it doesn't exist
-                        deptId = `${funcId}_Dept_${department}`;
-                        nodes.push({ id: deptId, parentId: currentParentId, name: department, type: "department", totalReportees: 0, totalVacancies: 0 });
-                        nodeMap.add(deptId);
+                if(count > 0 && dep !== "Unknown") {
+                    // Try to attach vacancy to someone in that department
+                    let parentForVacancy = "Root";
+                    
+                    // Look for the manager in that department based on power levels or just any node in department
+                    const deptMembers = nodes.filter(n => n.department === dep && n.type === 'employee');
+                    if(deptMembers.length > 0) {
+                        // find highest ranking in that department
+                        deptMembers.sort((a,b) => (a.level || 99) - (b.level || 99));
+                        parentForVacancy = deptMembers[0].id;
                     }
 
-                    for (let i = 0; i < count; i++) {
-                        const vacancyId = `Vac_${deptId}_${designation}_${i}`;
-                        nodes.push({
-                            id: vacancyId,
-                            parentId: deptId,
-                            name: `${designation} (Vacant)`,
-                            designation: designation,
-                            department: department,
-                            type: "vacancy",
-                            totalReportees: 0,
-                            totalVacancies: 1
-                        });
-                        nodeMap.add(vacancyId);
-                    }
-                }
-            });
-
-            // --- Calculate totalReportees and totalVacancies for all nodes ---
-
-            // Step 1: Build a tree structure for aggregation
-            const nodeLookup = new Map(nodes.map(node => [node.id, { ...node, children: [] }]));
-
-            nodeLookup.forEach(node => {
-                if (node.parentId && nodeLookup.has(node.parentId)) {
-                    nodeLookup.get(node.parentId).children.push(node);
-                }
-            });
-
-            // Step 2: Recursive function to calculate aggregates
-            function calculateAggregates(node) {
-                let currentReportees = (node.type === 'employee' ? 1 : 0);
-                let currentVacancies = (node.type === 'vacancy' ? 1 : 0);
-
-                if (node.children) {
-                    node.children.forEach(child => {
-                        const childAggregates = calculateAggregates(child);
-                        currentReportees += childAggregates.reportees;
-                        currentVacancies += childAggregates.vacancies;
+                    nodes.push({
+                        id: `Vacancy_${vIndex++}`,
+                        parentId: parentForVacancy,
+                        name: "Position Vacant",
+                        designation: des,
+                        department: dep,
+                        type: "vacancy",
+                        vacantCount: count,
+                        actualReportees: 0,
+                        actualVacancies: count
                     });
                 }
+            });
 
-                // Update the original node object (by reference if working on nodeLookup objects)
-                const originalNode = nodes.find(n => n.id === node.id);
-                if (originalNode) {
-                    originalNode.totalReportees = currentReportees;
-                    originalNode.totalVacancies = currentVacancies;
+            // Compute Rollups (vacancies and reportees) bottom up
+            const lookup = {};
+            nodes.forEach(n => {
+                lookup[n.id] = n;
+                n.childrenIds = [];
+            });
+            nodes.forEach(n => {
+                if (n.parentId && lookup[n.parentId]) {
+                    lookup[n.parentId].childrenIds.push(n.id);
                 }
-                return { reportees: currentReportees, vacancies: currentVacancies };
+            });
+
+            function computeMetrics(nodeId) {
+                const node = lookup[nodeId];
+                let reportees = 0;
+                let vacs = node.type === 'vacancy' ? node.vacantCount : 0;
+                
+                node.childrenIds.forEach(cid => {
+                    const child = lookup[cid];
+                    const childMet = computeMetrics(cid);
+                    reportees += childMet.r + (child.type === 'employee' ? 1 : 0);
+                    vacs += childMet.v;
+                });
+
+                node.actualReportees = reportees;
+                node.actualVacancies = vacs;
+                
+                return { r: reportees, v: vacs };
             }
 
-            // Step 3: Start aggregation from the actual root (the one with no parentId)
-            const trueRootNode = nodeLookup.get(rootNodeId);
-            if (trueRootNode) {
-                calculateAggregates(trueRootNode);
-            }
-            // Ensure the factory head's employee node also gets its reportee count updated correctly
-            if (factoryHead) {
-                const factoryHeadNodeInTree = nodeLookup.get(factoryHead.id);
-                if(factoryHeadNodeInTree) {
-                    // Recalculate aggregates for factory head, as its children might have changed
-                    const fhAgg = calculateAggregates(factoryHeadNodeInTree);
-                    factoryHead.totalReportees = fhAgg.reportees;
-                    factoryHead.totalVacancies = fhAgg.vacancies;
-                    // Also update the root node's aggregate from the factory head's aggregate if it's the effective head
-                    const rootNodeObj = nodes.find(n => n.id === rootNodeId);
-                    if(rootNodeObj) {
-                        rootNodeObj.totalReportees = factoryHead.totalReportees;
-                        rootNodeObj.totalVacancies = factoryHead.totalVacancies; // Root node takes on head's total
-                    }
-                }
-            }
+            computeMetrics("Root");
 
-            return { nodes, factoryHead };
+            return nodes;
         }
 
-        function renderChart(data, factoryHead) {
+        function renderChart(data) {
             chart = new d3.OrgChart()
                 .container('.chart-container')
                 .data(data)
-                .nodeWidth(d => 250)
-                .initialZoom(0.7)
-                .initialExpandLevel(0) // Chart collapsed by default
-                .nodeHeight(d => d.data.type === 'employee' || d.data.isFactoryHeadRoot ? 140 : 100) // Bigger for employees and root if factory head
-                .childrenMargin(d => 40)
-                .compactMarginBetween(d => 15)
-                .compactMarginPair(d => 80)
-                .linkUpdate(function(d, i, arr) {
-                    d3.select(this)
-                        .attr('stroke', '#00ff00') // Neon green color
-                        .attr('stroke-width', 2)
-                        .attr('stroke-dasharray', '5, 5') // Optional: dashed line for neon effect
-                        .raise(); // Ensure links are above nodes if necessary
-                })
-                .nodeContent(function(d, i, arr, state) {
-                    let color = '#FFFFFF'; // This will be overridden by border-top style
-                    let title = '';
+                .nodeWidth(d => d.data.type === 'root' ? 320 : 260)
+                .nodeHeight(d => d.data.type === 'root' ? 170 : 130)
+                .childrenMargin(d => 50)
+                .compactMarginBetween(d => 25)
+                .compactMarginPair(d => 50)
+                .nodeContent(function (d, i, arr, state) {
+                    const isDark = !document.body.classList.contains('light-theme');
+                    const bgColor = isDark ? '#1e1e1e' : '#ffffff';
+                    const textColor = isDark ? '#ffffff' : '#1f2937';
+                    const subColor = isDark ? '#a0a0a0' : '#4b5563';
+                    const neon = isDark ? '#00ffff' : '#4f46e5';
+                    
+                    let strokeColor = neon;
+                    if(d.data.type === 'vacancy') strokeColor = '#dc2626';
 
-                    const isDarkTheme = document.body.classList.contains('dark-theme');
-
-                    switch(d.data.type) {
-                        case 'root': color = '#111827'; title = 'COMPANY HEAD'; break;
-                        case 'phase': color = '#059669'; title = 'PHASE'; break;
-                        case 'function': color = '#ca8a04'; title = 'FUNCTION'; break;
-                        case 'department': color = '#7c3aed'; title = 'DEPARTMENT'; break;
-                        case 'designation': color = '#dc2626'; title = 'DESIGNATION'; break;
-                        case 'employee': color = '#2563eb'; title = d.data.designation || 'EMPLOYEE'; break; // Designation as heading
-                        case 'vacancy': color = '#ff0000'; title = 'VACANT'; break; // Red for vacant positions
-                    }
-
-                    // Adjust background and text color of the card based on theme
-                    let cardBackgroundColor = isDarkTheme ? '#2d3748' : '#ffffff';
-                    let mainTextColor = isDarkTheme ? '#edf2f7' : '#1f2937';
-                    let secondaryTextColor = isDarkTheme ? '#a0aec0' : '#4b5563';
-                    let tertiaryTextColor = isDarkTheme ? '#cbd5e0' : '#9ca3af';
-
-                    let contentHtml = '';
+                    const reporteeStr = d.data.actualReportees > 0 ? `<div style="font-size:11px; margin-top:5px; color:${neon}">👥 Total Reportees: ${d.data.actualReportees}</div>` : '';
+                    const vacancyStr = d.data.actualVacancies > 0 ? `<div style="font-size:11px; margin-top:2px; color:#ff4444">⚠️ Dept Vacancies: ${d.data.actualVacancies}</div>` : '';
 
                     if (d.data.type === 'root') {
-                        contentHtml = `
-                            <div style="font-size: 11px; color: ${color}; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 5px;">COMPANY HEAD</div>
-                            <div style="font-size: 16px; font-weight: 700; color: ${mainTextColor}; margin-bottom: 4px; word-break: break-word; line-height: 1.2;">Avaada (Nagpur Plant)</div>
-                            <div style="font-size: 14px; color: ${secondaryTextColor}; font-weight: 600;">${d.data.name || 'N/A'}</div>
-                            <div style="font-size: 13px; color: ${tertiaryTextColor};">${d.data.designation || 'Factory Head'}</div>
-                            <div style="font-size: 12px; color: ${tertiaryTextColor}; margin-top: 5px;">Emp ID: ${d.data.employeeId || 'N/A'}</div>
-                            <div style="font-size: 12px; color: ${tertiaryTextColor};">Total Reportees: ${d.data.totalReportees || '0'}</div>
-                            <div style="font-size: 12px; color: ${tertiaryTextColor};">Total Vacancies: ${d.data.totalVacancies || '0'}</div>
-                        `;
-                    } else if (d.data.type === 'employee') {
-                        contentHtml = `
-                            <div style="font-size: 11px; color: ${color}; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 5px;">${title}</div>
-                            <div style="font-size: 16px; font-weight: 700; color: ${mainTextColor}; margin-bottom: 4px; word-break: break-word; line-height: 1.2;">${d.data.name}</div>
-                            <div style="font-size: 13px; color: ${secondaryTextColor}; font-weight: 500;">${d.data.designation || ''}</div>
-                            <div style="font-size: 12px; color: ${tertiaryTextColor}; margin-top: 2px;">Emp ID: ${d.data.employeeId || 'N/A'}</div>
-                            <div style="font-size: 12px; color: ${tertiaryTextColor};">Dept: ${d.data.department || ''}</div>
-                            <div style="font-size: 12px; color: ${tertiaryTextColor};">Reportees: ${d.data.totalReportees > 1 ? (d.data.totalReportees -1) : '0'}</div>
-                            ${d.data.totalVacancies > 0 ? `<div style="font-size: 12px; color: ${color}; font-weight: 700; margin-top: 5px;">Vacancies: ${d.data.totalVacancies}</div>` : ''}
-                        `;
-                    } else if (d.data.type === 'vacancy') {
-                        contentHtml = `
-                            <div style="font-size: 11px; color: ${color}; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 5px;">${title}</div>
-                            <div style="font-size: 16px; font-weight: 700; color: ${mainTextColor}; margin-bottom: 4px; word-break: break-word; line-height: 1.2;">${d.data.designation}</div>
-                            <div style="font-size: 13px; color: ${secondaryTextColor}; font-weight: 500;">Position Vacant</div>
-                            <div style="font-size: 12px; color: ${tertiaryTextColor};">Dept: ${d.data.department || ''}</div>
-                        `;
-                    } else {
-                        // For phase, function, department, designation nodes
-                        contentHtml = `
-                            <div style="font-size: 11px; color: ${color}; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 5px;">${title}</div>
-                            <div style="font-size: 16px; font-weight: 700; color: ${mainTextColor}; margin-bottom: 0px; word-break: break-word; line-height: 1.2;">${d.data.name}</div>
-                            ${d.data.totalReportees > 0 ? `<div style="font-size: 12px; color: ${secondaryTextColor}; margin-top: 5px;">Total Reportees: ${d.data.totalReportees}</div>` : ''}
-                            ${d.data.totalVacancies > 0 ? `<div style="font-size: 12px; color: ${color}; font-weight: 700; margin-top: 5px;">Total Vacancies: ${d.data.totalVacancies}</div>` : ''}
-                        `;
+                        return `
+                        <div style="font-family: 'Inter', sans-serif; background-color: ${bgColor}; width: ${d.width}px; height: ${d.height}px; border-radius: 10px; border: 2px solid ${strokeColor}; box-shadow: 0 0 15px rgba(0,255,255,0.3); display: flex; flex-direction: column; justify-content: center; padding: 15px; box-sizing: border-box; text-align: center;">
+                            <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 5px;">${d.data.name}</div>
+                            <div style="font-size: 14px; font-weight: 600; color: ${neon};">${d.data.designation || ''}</div>
+                            <div style="font-size: 13px; color: ${subColor}; margin-top: 5px;">${d.data.empName || ''} (ID: ${d.data.empId || ''})</div>
+                            ${reporteeStr}
+                            ${vacancyStr}
+                            <button class="theme-btn" onclick="toggleTheme(event)">Toggle Theme (Light/Dark)</button>
+                        </div>`;
                     }
 
-                    return `<div style="font-family: 'Inter', sans-serif; background-color: ${cardBackgroundColor}; width: ${d.width}px; height: ${d.height}px; border-radius: 8px; border-top: 5px solid ${color}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); display: flex; flex-direction: column; justify-content: center; padding: 15px; box-sizing: border-box;">${contentHtml}</div>`;
+                    if (d.data.type === 'vacancy') {
+                        return `
+                        <div style="font-family: 'Inter', sans-serif; background-color: ${bgColor}; width: ${d.width}px; height: ${d.height}px; border-radius: 8px; border-top: 4px dashed ${strokeColor}; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; justify-content: center; padding: 15px; box-sizing: border-box;">
+                            <div style="font-size: 12px; font-weight: 700; color: ${strokeColor}; margin-bottom: 4px;">VACANT POSITION</div>
+                            <div style="font-size: 15px; font-weight: 700; color: ${textColor}; word-break: break-word;">${d.data.designation}</div>
+                            <div style="font-size: 12px; color: ${subColor}; margin-top: 4px;">Qty: ${d.data.vacantCount}</div>
+                        </div>`;
+                    }
+
+                    return `
+                    <div style="font-family: 'Inter', sans-serif; background-color: ${bgColor}; width: ${d.width}px; height: ${d.height}px; border-radius: 8px; border-left: 5px solid ${strokeColor}; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; justify-content: center; padding: 15px; box-sizing: border-box;">
+                        <div style="font-size: 15px; font-weight: 700; color: ${neon}; margin-bottom: 4px; word-break: break-word; line-height: 1.2;">
+                            ${d.data.designation || 'Employee'}
+                        </div>
+                        <div style="font-size: 14px; color: ${textColor}; font-weight: 600;">${d.data.name}</div>
+                        <div style="font-size: 12px; color: ${subColor}; margin-top: 2px;">ID: ${d.data.id} | ${d.data.department || ''}</div>
+                        ${reporteeStr}
+                        ${vacancyStr}
+                    </div>
+                    `;
                 })
                 .render();
 
+            // Link styling callback provided by D3 Org Chart
+            chart.linkUpdate(function (d, i, arr) {
+                const isDark = !document.body.classList.contains('light-theme');
+                d3.select(this)
+                    .attr('stroke', isDark ? '#00ffff' : '#4f46e5')
+                    .attr('stroke-width', 2)
+                    .style('filter', isDark ? 'drop-shadow(0 0 5px #00ffff)' : 'none');
+            });
+
+            // Start collapsed by default
             setTimeout(() => {
-                chart.fit();
+                chart.collapseAll().fit();
+                chart.expand(chart.data()[0]); // Expand just the root to show top level
             }, 100);
         }
+
+        // Initialize
+        loadData();
     </script>
 </body>
 </html>
