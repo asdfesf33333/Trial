@@ -147,10 +147,44 @@
         }
         function downloadPNG() {
             if (!window.chart) return;
+
+            // Step 1: Inject neon glow SVG filter into chart's defs so it renders in export
+            const svgEl = document.querySelector('.chart-container svg');
+            if (svgEl) {
+                let defs = svgEl.querySelector('defs');
+                if (!defs) {
+                    defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                    svgEl.prepend(defs);
+                }
+                if (!defs.querySelector('#neon-glow')) {
+                    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                    filter.setAttribute('id', 'neon-glow');
+                    filter.setAttribute('x', '-50%');
+                    filter.setAttribute('y', '-50%');
+                    filter.setAttribute('width', '200%');
+                    filter.setAttribute('height', '200%');
+                    filter.innerHTML =
+                        '<feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>' +
+                        '<feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>';
+                    defs.appendChild(filter);
+                }
+
+                // Step 2: Set SVG background to match current theme
+                const isDark = document.body.classList.contains('dark-theme');
+                const bgColor = isDark ? '#111827' : '#f3f4f6';
+                svgEl.style.backgroundColor = bgColor;
+            }
+
+            const isDark = document.body.classList.contains('dark-theme');
+            const bgColor = isDark ? '#111827' : '#f3f4f6';
+
             window.chart.exportImg({
                 full: true,
                 scale: 3,
                 onAfterExport: function(dataUrl) {
+                    // Reset SVG background after export
+                    const s = document.querySelector('.chart-container svg');
+                    if (s) s.style.backgroundColor = '';
                     const link = document.createElement('a');
                     link.download = 'Avaada_Org_Chart.png';
                     link.href = dataUrl;
