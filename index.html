@@ -334,18 +334,80 @@
     </div>
 
     <script>
-        // --- Obfuscated Logic Loader ---
-        // Decodes and executes the main application logic
-        (function(){
-            const _atob = (s) => {
-                try {
-                    const standard = s.replace(/-/g, '+').replace(/_/g, '/');
-                    while (standard.length % 4) standard += '=';
-                    return window.atob(standard);
-                } catch(e) { return s; }
-            };
-            // The following Base64 string contains the core application logic.
-            const coreLogic = "ICAgICAgICAvLyAtLS0gQ29uZmlndXJhdGlvbiAmIE9iZnVzY2F0ZWQgVVJMcyAtLS0KICAgICAgICBjb25zdCBfYXRvYiA9IChzKSA9PiB7CiAgICAgICAgICAgIHRyeSB7IAogICAgICAgICAgICAgICAgaWYgKCFzKSByZXR1cm4gIiI7CiAgICAgICAgICAgICAgICAvLyBIYW5kbGUgVVJMLXNhZmUgYmFzZTY0IGFuZCBlbnN1cmUgcGFkZGluZwogICAgICAgICAgICAgICAgbGV0IHN0YW5kYXJkID0gcy5yZXBsYWNlKC8tL2csICcrJykucmVwbGFjZSgvXy9nLCAnLycpOwogICAgICAgICAgICAgICAgd2hpbGUgKHN0YW5kYXJkLmxlbmd0aCAlIDQpIHN0YW5kYXJkICs9ICc9JzsKICAgICAgICAgICAgICAgIHJldHVybiB3aW5kb3cuYXRvYihzdGFuZGFyZCk7IAogICAgICAgICAgICB9IGNhdGNoKGUpIHsgCiAgICAgICAgICAgICAgICBjb25zb2xlLndhcm4oIkJhc2U2NCBkZWNvZGUgZmFpbGVkIGZvcjoiLCBzLCBlKTsKICAgICAgICAgICAgICAgIHJldHVybiBzOyAKICAgICAgICAgICAgfQogICAgICAgIH07CiAgICAgICAgCiAgICAgICAgLy8gVGhlc2JlIGFyZSB0aGUgVVJMcyBmcm9tIHlvdXIgc2hlZXQgKFJFUEFJUkVEKQogICAgICAgIGNvbnN0IG1haW5VcmwgPSBfYXRvYigiYUhRMG9ITTZMeTlrYjJOekxtZHZiMmRzWlM1amIyMHZjM0J5WldGa2MyaGxaWFJ6TDJRdk1YUlpZMjVEVlVjMlFsWmtWRkZNVWxoek4zNlFrTkctVTlaZWtob04wNWhjRXMxY2xSbVluRTBRelF2WldScGRIM1AyWnZjbTFoZEQxamN6WT0iKTsKICAgICAgICBjb25zdCBwb3dlclVybCA9IF9hdG9iKCJhSFIwY0hNNkx5OWtiMk56TG1kdmIyZHNaUzVqYjIwdmMzQnlaV0ZrYzJobFpYUnpMMlF2TVhSWlkyNURWVWMyUWxaa1ZGRk1VbGh6TjM2UWtORy1VOVpla2hvTjA1aGNFczFjbFJtWW5FMFF6VnZczUGxhOTBjVDkwY1hnOWIzVjBPbU56ZEdsWnphR1ZsZEQxd2IzUmxjZz09Iik7CiAgICAgICAgCiAgICAgICAgLy8gQ29uZmlndXJhdGlvbiAtIFVzZXIgbXVzdCB1cGRhdGUgdGhlc2UgR0lEcyBpbiB0aGUgc2NyaXB0IG9yIGluIHRoZSBTaGVldCBVUkxzCiAgICAgICAgY29uc3QgcGFzc3dvcmRzVXJsID0gbWFpblVybC5pbmNsdWRlcygiZ2lkPSIpID8gbWFpblVybC5yZXBsYWNlKC9naWQ9XGQrLywgImdpZD1ZT1VSX1BBU1NXT1JEU19HSUQiKSA6IG1haW5VcmwgKyAiJmdpZD1ZT1VSX1BBU1NXT1JEU19HSUQiOwogICAgICAgIGNvbnN0IHBpY3R1cmVVcmwgPSBtYWluVXJsLmluY2x1ZGVzKCJnaWQ9IikgPyBtYWluVXJsLnJlcGxhY2UoL2dpZD1cZCsvLCAiZ2lkPVlPVVJfUElDVFVSRV9HSUQiKSA6IG1haW5VcmwgKyAiJmdpZD1ZT1VSX1BJQ1RVUkVfR0lEIjsKICAgICAgICBjb25zdCBBUFBTX1NDUklQVF9VUkwgPSAiaHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9ZT1VSX1NDUklQVF9JRC9leGVjIjsKCiAgICAgICAgd2luZG93LmNoYXJ0ID0gbnVsbDsKICAgICAgICBsZXQgc2hlZXQxRGF0YSA9IFtdOwoKICAgICAgICAvLyAtLS0gQXV0aGVudGljYXRpb24gLS0tCiAgICAgICAgd2luZG93LmhhbmRsZUxvZ2luID0gYXN5bmMgZnVuY3Rpb24oKSB7CiAgICAgICAgICAgIGNvbnN0IGlkID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2xvYWRpbi1pZCcpLnZhbHVlOwogICAgICAgICAgICBjb25zdCBwYXNzID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2xvYWRpbi1wYXNzJykudmFsdWU7CiAgICAgICAgICAgIGNvbnN0IGVycm9yRWwgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbG9naW4tZXJyb3InKTsKCiAgICAgICAgICAgIGlmIChpZCA9PT0gImFkbWluIiAmJiBwYXNzID09PSAiYWRtaW4iKSB7CiAgICAgICAgICAgICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbG9naW4tb3ZlcmxheScpLnN0eWxlLmRpc3BsYXkgPSAnbm9uZSc7CiAgICAgICAgICAgICAgICBpbml0Q2hhcnQoKTsKICAgICAgICAgICAgICAgIHJldHVybjsKICAgICAgICAgICAgfQoKICAgICAgICAgICAgHRyeSB7CiAgICAgICAgICAgICAgICBjb25zdCByZXNwb25zZSA9IGF3YWl0IGZldGNoKHBhc3N3b3Jkc1VybCk7CiAgICAgICAgICAgICAgICBpZiAoIXJlc3BvbnNlLm9rKSB0aHJvdyBuZXcgRXJyb3IoIlNoZWV0IGFjY2VzcyBibG9ja2VkIG9yIFVSTCBpbnZhbGlkIik7CiAgICAgICAgICAgICAgICBjb25zdCBjc3ZUZXh0ID0gYXdhaXQgcmVzcG9uc2UudGV4dCgpOwogICAgICAgICAgICAgICAgY29uc3QgYXV0aERhdGEgPSBQYXBhLnBhcnNlKGNzdlRleHQsIHsgaGVhZGVyOiB0cnVlIH0pLmRhdGE7CiAgICAgICAgICAgICAgICBjb25zdCB1c2VyID0gYXV0aERhdGEuZmluZCh1ID0+IHVbIkxvZ2luIElEIl0gPT09IGlkICYmIHVbIlBhc3N3b3JkIl0gPT09IHBhc3MpOwogICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICBpZiAodXNlcikgewogICAgICAgICAgICAgICAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdsb2dpbi1vdmVybGF5Jykuc3R5bGUuZGlzcGxheSA9ICdub25lJzsKICAgICAgICAgICAgICAgICAgICBpbml0Q2hhcnQoKTsKICAgICAgICAgICAgICAgICAgICBzaG93Q29uc29sZVBpY3R1cmUoKTsKICAgICAgICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgICAgICAgICAgZXJyb3JFbC5zdHlsZS5kaXNwbGF5ID0gJ2Jsb2NrJzsKICAgICAgICAgICAgICAgICAgICBlcnJvckVsLmlubmVyVGV4dCA9ICJJbnZhbGlkIElEIG9yIFBhc3N3b3JkIjsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSBjYXRjaCAoZXJyKSB7CiAgICAgICAgICAgICAgICBjb25zb2xlLmVycm9yKCJBdXRoIGVycm9yOiIsIGVycik7CiAgICAgICAgICAgICAgICBlcnJvckVsLmlubmVyVGV4dCA9ICJBdXRoIGZhaWxlZC4gRW5zdXJlIFBBU1NXT1JEU19HSUQgaXMgY29ycmVjdCBhbmQgYWNjZXNzIGlzIHB1YmxpYy4iOwogICAgICAgICAgICAgICAgZXJyb3JFbC5zdHlsZS5kaXNwbGF5ID0gJ2Jsb2NrJzsKICAgICAgICAgICAgfQogICAgICAgIH07CgogICAgICAgIGFzeW5jIGZ1bmN0aW9uIHNob3dDb25zb2xlUGljdHVyZSgpIHsKICAgICAgICAgICAgdHJ5IHsKICAgICAgICAgICAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2gocGljdHVyZVVybCk7CiAgICAgICAgICAgICAgICBjb25zdCBjc3ZUZXh0ID0gYXdhaXQgcmVzcG9uc2UudGV4dCgpOwogICAgICAgICAgICAgICAgY29uc3QgcGljRGF0YSA9IFBhcGEucGFyc2UoY3N2VGV4dCwgeyBoZWFkZXI6IGZhbHNlIH0pLmRhdGE7CiAgICAgICAgICAgICAgICBjb25zdCBpbWdVcmwgPSBwaWNEYXRhWzBdWzBdOyAKICAgICAgICAgICAgICAgIGlmIChpbWdVcmwgJiYgaW1nVXJsLnN0YXJ0c1dpdGgoJ2h0dHAnKSkgewogICAgICAgICAgICAgICAgICAgIGNvbnNvbGUubG9nKCIlYyAiLCBgcGFkZGluZzogMTAwcHg7IGJhY2tncm91bmQ6IHVybCgnJHtpbWdVcmx9Jykgbm8tcmVwZWF0OyBiYWNrZ3JvdW5kLXNpemU6IGNvbnRhaW47YCk7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0gY2F0Y2ggKGUpIHsgY29uc29sZS5sb2coIkxvZ2luIHBpY3R1cmUgbm90IGNvbmZpZ3VyZWQuIik7IH0KICAgICAgICB9CgogICAgICAgIGZ1bmN0aW9uIGNsZWFuU3RyaW5nKHN0cikgeyByZXR1cm4gc3RyID8gc3RyLnRyaW0oKS5yZXBsYWNlKC9ccysvZywgJyAnKSA6ICJVbmtub3duIjsgfQoKICAgICAgICBhc3luYyBmdW5jdGlvbiBpbml0Q2hhcnQoKS {
+        // --- Configuration & Obfuscated URLs ---
+        const _atob = (s) => {
+            try { 
+                if (!s) return "";
+                let standard = s.replace(/-/g, '+').replace(/_/g, '/');
+                while (standard.length % 4) standard += '=';
+                return window.atob(standard); 
+            } catch(e) { 
+                console.warn("Base64 decode failed:", e);
+                return s; 
+            }
+        };
+        
+        // These are the URLs from your sheet (REPAIRED)
+        const mainUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVVl2ZkVFZFlhzN36QkNG-U9ZekhoN05hcEs1clRmYnE0QzQvZ2V0c2h3P2Zvc21hdD1jczY=");
+        const powerUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVVl2ZkVFZFlhzN36QkNG-U9ZekhoN05hcEs1clRmYnE0QzQvZ2V0c2h3P2Zvc21hdD1jc3YmZ2lkPTkwY1hnOWIzVjBPbU56ZEdsWnphR1ZsZEQxd2IzUmxjZz09");
+        
+        // Configuration - User must update these GIDs in the script or in the Sheet URLs
+        const passwordsUrl = mainUrl.includes("gid=") ? mainUrl.replace(/gid=\d+/, "gid=YOUR_PASSWORDS_GID") : mainUrl + "&gid=YOUR_PASSWORDS_GID";
+        const pictureUrl = mainUrl.includes("gid=") ? mainUrl.replace(/gid=\d+/, "gid=YOUR_PICTURE_GID") : mainUrl + "&gid=YOUR_PICTURE_GID";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+
+        window.chart = null;
+        let sheet1Data = [];
+
+        // --- Authentication ---
+        window.handleLogin = async function() {
+            const id = document.getElementById('login-id').value;
+            const pass = document.getElementById('login-pass').value;
+            const errorEl = document.getElementById('login-error');
+
+            if (id === "admin" && pass === "admin") {
+                document.getElementById('login-overlay').style.display = 'none';
+                initChart();
+                return;
+            }
+
+            try {
+                const response = await fetch(passwordsUrl);
+                if (!response.ok) throw new Error("Sheet access blocked or URL invalid");
+                const csvText = await response.text();
+                const authData = Papa.parse(csvText, { header: true }).data;
+                const user = authData.find(u => u["Login ID"] === id && u["Password"] === pass);
+                
+                if (user) {
+                    document.getElementById('login-overlay').style.display = 'none';
+                    initChart();
+                    showConsolePicture();
+                } else {
+                    errorEl.style.display = 'block';
+                    errorEl.innerText = "Invalid ID or Password";
+                }
+            } catch (err) {
+                console.error("Auth error:", err);
+                errorEl.innerText = "Auth failed. Ensure PASSWORDS_GID is correct and access is public.";
+                errorEl.style.display = 'block';
+            }
+        };
+
+        async function showConsolePicture() {
+            try {
+                const response = await fetch(pictureUrl);
+                const csvText = await response.text();
+                const picData = Papa.parse(csvText, { header: false }).data;
+                const imgUrl = picData[0][0]; 
+                if (imgUrl && imgUrl.startsWith('http')) {
+                    console.log("%c ", `padding: 100px; background: url('${imgUrl}') no-repeat; background-size: contain;`);
+                }
+            } catch (e) { console.log("Login picture not configured."); }
+        }
+
+        function cleanString(str) { return str ? str.trim().replace(/\s+/g, ' ') : "Unknown"; }
+
+        async function initChart() {
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'block';
             try {
@@ -597,9 +659,7 @@
             document.body.classList.toggle('dark-theme');
             document.body.classList.toggle('light-theme');
             if (window.chart) window.chart.render();
-        };";
-            eval(_atob(coreLogic));
-        })();
+        };
     </script>
 </body>
 </html>
