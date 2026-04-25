@@ -71,7 +71,12 @@
             text-align: center;
         }
 
-        .login-card h2 { margin-bottom: 1.5rem; color: #fff; font-weight: 700; }
+        .login-card h2 {
+            margin-bottom: 1.5rem;
+            color: #fff;
+            font-weight: 700;
+        }
+
         .login-card input {
             width: 100%;
             padding: 0.75rem 1rem;
@@ -95,8 +100,16 @@
             transition: background 0.2s;
         }
 
-        .login-card button:hover { background: var(--primary-hover); }
-        #login-error { color: #ef4444; font-size: 0.875rem; margin-top: 1rem; display: none; }
+        .login-card button:hover {
+            background: var(--primary-hover);
+        }
+
+        #login-error {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            display: none;
+        }
 
         /* Dashboard Header */
         .dashboard-header {
@@ -133,10 +146,25 @@
             font-size: 14px;
         }
 
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(0,0,0,0.1); }
-        .dark-theme .btn-secondary { border-color: rgba(255,255,255,0.1); }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: inherit;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .btn-secondary {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
 
         /* Chart Container */
         .chart-container {
@@ -168,11 +196,24 @@
             overflow-y: auto;
         }
 
-        .dark-theme .modal-content { background: var(--card-dark); color: #fff; }
+        .dark-theme .modal-content {
+            background: var(--card-dark);
+            color: #fff;
+        }
 
-        .form-group { margin-bottom: 1.25rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 14px; }
-        .form-group input, .form-group select {
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
             width: 100%;
             padding: 0.6rem 1rem;
             border-radius: 0.5rem;
@@ -182,7 +223,10 @@
             box-sizing: border-box;
         }
 
-        .dark-theme .form-group input, .dark-theme .form-group select { border-color: rgba(255,255,255,0.1); }
+        .dark-theme .form-group input,
+        .dark-theme .form-group select {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
 
         #loading {
             position: fixed;
@@ -194,9 +238,20 @@
         }
 
         /* Tom Select Dark Mode */
-        .dark-theme .ts-control { background: #1e293b; color: #fff; border-color: rgba(255,255,255,0.1); }
-        .dark-theme .ts-dropdown { background: #1e293b; color: #fff; }
-        .dark-theme .ts-dropdown .active { background: #334155; }
+        .dark-theme .ts-control {
+            background: #1e293b;
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .dark-theme .ts-dropdown {
+            background: #1e293b;
+            color: #fff;
+        }
+
+        .dark-theme .ts-dropdown .active {
+            background: #334155;
+        }
     </style>
 </head>
 
@@ -215,15 +270,23 @@
 
     <div class="dashboard-header">
         <button class="btn btn-primary" onclick="showAddVacancyModal()">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
             Add Vacancy
         </button>
         <button class="btn btn-secondary" onclick="downloadPNG()">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
             Export PNG
         </button>
         <button class="btn btn-secondary" onclick="toggleTheme()">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
             Theme
         </button>
     </div>
@@ -249,7 +312,8 @@
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button type="submit" class="btn btn-primary" style="flex:1">Add Vacancy</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('add-vacancy-modal')">Cancel</button>
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('add-vacancy-modal')">Cancel</button>
                 </div>
             </form>
         </div>
@@ -327,7 +391,8 @@
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button type="submit" class="btn btn-primary" style="flex:1">Update & Onboard</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('update-details-modal')">Cancel</button>
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('update-details-modal')">Cancel</button>
                 </div>
             </form>
         </div>
@@ -337,29 +402,29 @@
         // --- Configuration & Obfuscated URLs ---
         // --- Configuration & Obfuscated URLs ---
         const _atob = (s) => {
-            try { 
+            try {
                 if (!s) return "";
                 let standard = s.replace(/-/g, '+').replace(/_/g, '/');
                 while (standard.length % 4) standard += '=';
-                return window.atob(standard); 
-            } catch(e) { return s; }
+                return window.atob(standard);
+            } catch (e) { return s; }
         };
-        
+
         // BASE URL (ENCRYPTED)
         const SHEET_BASE = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVVl2ZkVFZFlhzN36QkNG-U9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3Y=");
-        
+
         // Worksheets (Update GIDs here)
         const mainUrl = SHEET_BASE + "&gid=0";
-        const powerUrl = SHEET_BASE + "&gid=906479032"; // GID for Power sheet
+        const powerUrl = SHEET_BASE + "&gid=2045352356"; // GID for Power sheet
         const passwordsUrl = SHEET_BASE + "&gid=129683910"; // <--- CHANGE THIS TO YOUR AUTH SHEET GID
-        const pictureUrl = SHEET_BASE + "&gid=87654321";   // <--- CHANGE THIS TO YOUR PICTURE SHEET GID
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+        const pictureUrl = SHEET_BASE + "&gid=680545635";   // <--- CHANGE THIS TO YOUR PICTURE SHEET GID
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/1y7c-uKCPCQXezzFOXulhDBxwzUiGJ4x4zI-1LI9wq4ttj1Dd_kmiCmfN/exec";
 
         window.chart = null;
         let sheet1Data = [];
 
         // --- Authentication ---
-        window.handleLogin = async function() {
+        window.handleLogin = async function () {
             const id = document.getElementById('login-id').value;
             const pass = document.getElementById('login-pass').value;
             const errorEl = document.getElementById('login-error');
@@ -380,7 +445,7 @@
                 const csvText = await response.text();
                 const authData = Papa.parse(csvText, { header: true }).data;
                 const user = authData.find(u => u["Login ID"] === id && u["Password"] === pass);
-                
+
                 if (user) {
                     document.getElementById('login-overlay').style.display = 'none';
                     initChart();
@@ -401,7 +466,7 @@
                 const response = await fetch(pictureUrl);
                 const csvText = await response.text();
                 const picData = Papa.parse(csvText, { header: false }).data;
-                const imgUrl = picData[0][0]; 
+                const imgUrl = picData[0][0];
                 if (imgUrl && imgUrl.startsWith('http')) {
                     console.log("%c ", `padding: 100px; background: url('${imgUrl}') no-repeat; background-size: contain;`);
                 }
@@ -558,7 +623,7 @@
                         if (d.data.employeeId) extra += `<div style="font-size:12px;color:${subColor};">ID: ${d.data.employeeId}</div>`;
                     }
 
-                    const updateBtn = (d.data.type === 'vacancy') ? 
+                    const updateBtn = (d.data.type === 'vacancy') ?
                         `<button onclick="event.stopPropagation(); showUpdateModal('${d.data.employeeId}')" style="margin-top:10px;padding:6px 12px;font-size:11px;background:#ef4444;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Update Details</button>` : '';
 
                     return `<div style="font-family:'Inter',sans-serif;background-color:${bgColor};width:${d.width}px;height:${d.height}px;border-radius:12px;border-top:5px solid ${color};padding:15px;box-sizing:border-box;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
@@ -573,11 +638,11 @@
                     </div>`;
                 })
                 .render();
-            setTimeout(() => { if(window.chart) window.chart.collapseAll().fit(); }, 200);
+            setTimeout(() => { if (window.chart) window.chart.collapseAll().fit(); }, 200);
         }
 
-        window.showAddVacancyModal = function() { document.getElementById('add-vacancy-modal').style.display = 'flex'; };
-        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
+        window.showAddVacancyModal = function () { document.getElementById('add-vacancy-modal').style.display = 'flex'; };
+        window.closeModal = function (id) { document.getElementById(id).style.display = 'none'; };
 
         function populateDropdowns() {
             const depts = [...new Set(sheet1Data.map(r => cleanString(r["Current Department"])).filter(d => d !== "Unknown"))];
@@ -609,7 +674,7 @@
             closeModal('add-vacancy-modal');
         };
 
-        window.showUpdateModal = function(vacId) {
+        window.showUpdateModal = function (vacId) {
             document.getElementById('target-vac-id').value = vacId;
             document.getElementById('update-details-modal').style.display = 'flex';
         };
@@ -645,7 +710,7 @@
             } catch (err) { alert("Submission failed."); }
         }
 
-        window.downloadPNG = function() {
+        window.downloadPNG = function () {
             if (!window.chart) return;
             const activeNode = window.chart.getChartState().allNodes.find(n => n.active);
             window.chart.exportImg({
@@ -658,11 +723,12 @@
             });
         };
 
-        window.toggleTheme = function() {
+        window.toggleTheme = function () {
             document.body.classList.toggle('dark-theme');
             document.body.classList.toggle('light-theme');
             if (window.chart) window.chart.render();
         };
     </script>
 </body>
+
 </html>
