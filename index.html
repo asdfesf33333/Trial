@@ -237,20 +237,27 @@
             z-index: 1500;
         }
 
-        /* Tom Select Dark Mode */
-        .dark-theme .ts-control {
-            background: #1e293b;
-            color: #fff;
-            border-color: rgba(255, 255, 255, 0.1);
+        /* Tom Select Dark Mode Fixes */
+        .ts-control {
+            border-radius: 0.5rem !important;
+            padding: 0.6rem 1rem !important;
+            border: 1px solid #ddd !important;
+        }
+        
+        .dark-theme .ts-control, .dark-theme .ts-control input {
+            background-color: #1e293b !important;
+            color: #fff !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
         }
 
-        .dark-theme .ts-dropdown {
-            background: #1e293b;
-            color: #fff;
+        .dark-theme .ts-dropdown, .dark-theme .ts-dropdown .option {
+            background-color: #1e293b !important;
+            color: #fff !important;
         }
 
-        .dark-theme .ts-dropdown .active {
-            background: #334155;
+        .dark-theme .ts-dropdown .option.active, .dark-theme .ts-dropdown .option:hover {
+            background-color: #334155 !important;
+            color: #fff !important;
         }
     </style>
 </head>
@@ -466,9 +473,21 @@
                 const response = await fetch(pictureUrl);
                 const csvText = await response.text();
                 const picData = Papa.parse(csvText, { header: false }).data;
-                const imgUrl = picData[0][0];
-                if (imgUrl && imgUrl.startsWith('http')) {
-                    console.log("%c ", `padding: 100px; background: url('${imgUrl}') no-repeat; background-size: contain;`);
+                let imgStr = picData[0][0]; 
+                if (imgStr) {
+                    imgStr = imgStr.trim();
+                    let finalUrl = imgStr;
+                    
+                    // Try decoding using our base64 _atob
+                    let decoded = _atob(imgStr);
+                    if (decoded.startsWith('http') || decoded.startsWith('data:')) {
+                        finalUrl = decoded;
+                    } else if (!imgStr.startsWith('http') && !imgStr.startsWith('data:')) {
+                        // Assuming raw base64 image content without data prefix
+                        finalUrl = `data:image/png;base64,${imgStr}`;
+                    }
+                    
+                    console.log("%c ", `padding: 100px; background: url('${finalUrl}') no-repeat; background-size: contain;`);
                 }
             } catch (e) { console.log("Login picture not configured."); }
         }
@@ -591,12 +610,25 @@
             }
         }
 
+        let activeNodeId = null;
+
         function renderChart(data) {
             window.chart = new d3.OrgChart()
                 .container('.chart-container')
                 .data(data)
                 .nodeWidth(d => 260)
                 .nodeHeight(d => (d.data.employeeName || d.data.type === 'employee' || d.data.type === 'vacancy') ? 160 : 115)
+                .onNodeClick(d => {
+                    activeNodeId = d.data.id;
+                    window.chart.clearHighlighting();
+                    window.chart.setUpToTheRootHighlighted(d.data.id).render();
+                })
+                .linkUpdate(function (d, i, arr) {
+                    d3.select(this)
+                        .attr('stroke', document.body.classList.contains('dark-theme') ? '#0ea5e9' : '#6366f1')
+                        .attr('stroke-width', document.body.classList.contains('dark-theme') ? 3 : 2)
+                        .style('filter', document.body.classList.contains('dark-theme') ? 'drop-shadow(0 0 5px rgba(14, 165, 233, 0.8))' : 'none');
+                })
                 .nodeContent(function (d) {
                     const isDark = document.body.classList.contains('dark-theme');
                     const bgColor = isDark ? '#1e293b' : '#ffffff';
@@ -712,15 +744,31 @@
 
         window.downloadPNG = function () {
             if (!window.chart) return;
-            const activeNode = window.chart.getChartState().allNodes.find(n => n.active);
-            window.chart.exportImg({
-                full: !activeNode, scale: 3,
-                onAfterExport: (dataUrl) => {
-                    const link = document.createElement('a');
-                    link.download = `Org_Chart_${Date.now()}.png`;
-                    link.href = dataUrl; link.click();
+            
+            if (activeNodeId) {
+                // Collapse all unselected branches and only expand the selected one
+                window.chart.collapseAll();
+                const state = window.chart.getChartState();
+                let curr = state.allNodes.find(n => n.data.id === activeNodeId);
+                while (curr) {
+                    window.chart.setExpanded(curr.data.id);
+                    curr = curr.parent;
                 }
-            });
+                window.chart.setExpanded(activeNodeId);
+                window.chart.render().fit();
+            }
+
+            // Wait for animations before exporting
+            setTimeout(() => {
+                window.chart.exportImg({
+                    full: true, scale: 3,
+                    onAfterExport: (dataUrl) => {
+                        const link = document.createElement('a');
+                        link.download = `Org_Chart_${Date.now()}.png`;
+                        link.href = dataUrl; link.click();
+                    }
+                });
+            }, 600);
         };
 
         window.toggleTheme = function () {
