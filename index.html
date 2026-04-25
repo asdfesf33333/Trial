@@ -412,13 +412,30 @@
 
         // BASE URL (ENCRYPTED)
         const SHEET_BASE = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3Y=");
-
-        // Worksheets (Update GIDs here)
-        const mainUrl = SHEET_BASE + "&gid=0";
-        const powerUrl = SHEET_BASE + "&gid=906479032"; // GID for Power sheet
-        const passwordsUrl = SHEET_BASE + "&gid=129683910"; // <--- CHANGE THIS TO YOUR AUTH SHEET GID
-        const pictureUrl = SHEET_BASE + "&gid=2045352356";   // <--- CHANGE THIS TO YOUR PICTURE SHEET GID
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/1y7c-uKCPCQXezzFOXulhDBxwzUiGJ4x4zI-1LI9wq4ttj1Dd_kmiCmfN/exec";
+
+        // Proxy Fetcher (Bypasses Corporate Blocks)
+        const proxyFetch = async (gid) => {
+            const url = `${APPS_SCRIPT_URL}?action=getSheetData&gid=${gid}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Proxy fetch failed for GID ${gid}`);
+            const data = await response.json();
+            // Convert Apps Script array-of-arrays to array-of-objects for PapaParse style headers
+            const headers = data[0];
+            return data.slice(1).map(row => {
+                const obj = {};
+                headers.forEach((h, i) => obj[h] = row[i]);
+                return obj;
+            });
+        };
+
+        // Worksheets GIDs
+        const GIDS = {
+            main: "0",
+            power: "906479032",
+            passwords: "129683910",
+            picture: "2045352356"
+        };
 
         window.chart = null;
         let sheet1Data = [];
@@ -436,14 +453,7 @@
             }
 
             try {
-                // If GID is still a placeholder or incorrect, fetch will fail
-                const response = await fetch(passwordsUrl);
-                if (!response.ok) {
-                    console.error("Fetch failed for:", passwordsUrl);
-                    throw new Error("Sheet access blocked or GID invalid. Please check your passwordsUrl GID.");
-                }
-                const csvText = await response.text();
-                const authData = Papa.parse(csvText, { header: true }).data;
+                const authData = await proxyFetch(GIDS.passwords);
                 const user = authData.find(u => u["Login ID"] === id && u["Password"] === pass);
 
                 if (user) {
@@ -463,10 +473,8 @@
 
         async function showConsolePicture() {
             try {
-                const response = await fetch(pictureUrl);
-                const csvText = await response.text();
-                const picData = Papa.parse(csvText, { header: false }).data;
-                const imgUrl = picData[0][0];
+                const picData = await proxyFetch(GIDS.picture);
+                const imgUrl = Object.values(picData[0])[0]; 
                 if (imgUrl && imgUrl.startsWith('http')) {
                     console.log("%c ", `padding: 100px; background: url('${imgUrl}') no-repeat; background-size: contain;`);
                 }
@@ -479,14 +487,14 @@
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'block';
             try {
-                const [mainRes, powerRes] = await Promise.all([
-                    new Promise((res, rej) => Papa.parse(mainUrl, { download: true, header: true, complete: res, error: rej })),
-                    new Promise((res, rej) => Papa.parse(powerUrl, { download: true, header: true, complete: res, error: rej }))
+                const [mainData, powerData] = await Promise.all([
+                    proxyFetch(GIDS.main),
+                    proxyFetch(GIDS.power)
                 ]);
 
-                sheet1Data = mainRes.data;
+                sheet1Data = mainData;
                 const powerMap = {};
-                powerRes.data.forEach(row => {
+                powerData.forEach(row => {
                     const desig = row["Current Designation"];
                     if (desig) powerMap[desig.toUpperCase()] = {
                         level: parseInt(row["Level"]) || 99,
