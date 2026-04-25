@@ -115,8 +115,7 @@
         .dashboard-header {
             position: fixed;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 20px;
             display: flex;
             gap: 15px;
             z-index: 1000;
@@ -417,14 +416,11 @@
             } catch (e) { return s; }
         };
 
-        // BASE URL (ENCRYPTED)
-        const SHEET_BASE = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3Y=");
-
-        // Worksheets (Update GIDs here)
-        const mainUrl = SHEET_BASE + "&gid=0";
-        const powerUrl = SHEET_BASE + "&gid=2045352356"; // GID for Power sheet
-        const passwordsUrl = SHEET_BASE + "&gid=129683910"; // <--- CHANGE THIS TO YOUR AUTH SHEET GID
-        const pictureUrl = SHEET_BASE + "&gid=680545635";   // <--- CHANGE THIS TO YOUR PICTURE SHEET GID
+        // Worksheets (ENCRYPTED URLS)
+        const mainUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3YmZ2lkPTA=");
+        const powerUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3YmZ2lkPTIwNDUzNTIzNTY=");
+        const passwordsUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3YmZ2lkPTEyOTY4MzkxMA==");
+        const pictureUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3YmZ2lkPTY4MDU0NTYzNQ==");
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/1y7c-uKCPCQXezzFOXulhDBxwzUiGJ4x4zI-1LI9wq4ttj1Dd_kmiCmfN/exec";
 
         window.chart = null;
@@ -470,6 +466,11 @@
 
         async function showConsolePicture() {
             try {
+                // Supplemental textual warning
+                console.log("%c STOP! \n%cThis is a restricted corporate dashboard. Unauthorized inspection is prohibited.", 
+                            "color: red; font-size: 50px; font-weight: bold; font-family: sans-serif; text-shadow: 2px 2px 0px black;", 
+                            "color: white; font-size: 16px; background: #1e293b; padding: 10px; border-radius: 5px;");
+                            
                 const response = await fetch(pictureUrl);
                 const csvText = await response.text();
                 const picData = Papa.parse(csvText, { header: false }).data;
@@ -487,10 +488,13 @@
                         finalUrl = `data:image/png;base64,${imgStr}`;
                     }
                     
-                    console.log("%c ", `padding: 100px; background: url('${finalUrl}') no-repeat; background-size: contain;`);
+                    console.log("%c ", `padding: 150px; line-height: 300px; background: url('${finalUrl}') no-repeat center; background-size: contain;`);
                 }
             } catch (e) { console.log("Login picture not configured."); }
         }
+        
+        // Execute immediately to appear as soon as DevTools is opened
+        showConsolePicture();
 
         function cleanString(str) { return str ? str.trim().replace(/\s+/g, ' ') : "Unknown"; }
 
@@ -737,7 +741,13 @@
 
         async function submitToSheet(data) {
             try {
-                await fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                await fetch(APPS_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    cache: 'no-cache', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                    body: JSON.stringify(data) 
+                });
                 alert("Submitted successfully.");
             } catch (err) { alert("Submission failed."); }
         }
