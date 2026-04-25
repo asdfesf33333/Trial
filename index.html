@@ -335,25 +335,24 @@
 
     <script>
         // --- Configuration & Obfuscated URLs ---
+        // --- Configuration & Obfuscated URLs ---
         const _atob = (s) => {
             try { 
                 if (!s) return "";
                 let standard = s.replace(/-/g, '+').replace(/_/g, '/');
                 while (standard.length % 4) standard += '=';
                 return window.atob(standard); 
-            } catch(e) { 
-                console.warn("Base64 decode failed:", e);
-                return s; 
-            }
+            } catch(e) { return s; }
         };
         
-        // These are the URLs from your sheet (REPAIRED)
-        const mainUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVVl2ZkVFZFlhzN36QkNG-U9ZekhoN05hcEs1clRmYnE0QzQvZ2V0c2h3P2Zvc21hdD1jczY=");
-        const powerUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVVl2ZkVFZFlhzN36QkNG-U9ZekhoN05hcEs1clRmYnE0QzQvZ2V0c2h3P2Zvc21hdD1jc3YmZ2lkPTkwY1hnOWIzVjBPbU56ZEdsWnphR1ZsZEQxd2IzUmxjZz09");
+        // BASE URL (ENCRYPTED)
+        const SHEET_BASE = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVVl2ZkVFZFlhzN36QkNG-U9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3Y=");
         
-        // Configuration - User must update these GIDs in the script or in the Sheet URLs
-        const passwordsUrl = mainUrl.includes("gid=") ? mainUrl.replace(/gid=\d+/, "gid=YOUR_PASSWORDS_GID") : mainUrl + "&gid=YOUR_PASSWORDS_GID";
-        const pictureUrl = mainUrl.includes("gid=") ? mainUrl.replace(/gid=\d+/, "gid=YOUR_PICTURE_GID") : mainUrl + "&gid=YOUR_PICTURE_GID";
+        // Worksheets (Update GIDs here)
+        const mainUrl = SHEET_BASE + "&gid=0";
+        const powerUrl = SHEET_BASE + "&gid=906479032"; // GID for Power sheet
+        const passwordsUrl = SHEET_BASE + "&gid=12345678"; // <--- CHANGE THIS TO YOUR AUTH SHEET GID
+        const pictureUrl = SHEET_BASE + "&gid=87654321";   // <--- CHANGE THIS TO YOUR PICTURE SHEET GID
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
 
         window.chart = null;
@@ -372,8 +371,12 @@
             }
 
             try {
+                // If GID is still a placeholder or incorrect, fetch will fail
                 const response = await fetch(passwordsUrl);
-                if (!response.ok) throw new Error("Sheet access blocked or URL invalid");
+                if (!response.ok) {
+                    console.error("Fetch failed for:", passwordsUrl);
+                    throw new Error("Sheet access blocked or GID invalid. Please check your passwordsUrl GID.");
+                }
                 const csvText = await response.text();
                 const authData = Papa.parse(csvText, { header: true }).data;
                 const user = authData.find(u => u["Login ID"] === id && u["Password"] === pass);
