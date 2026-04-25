@@ -6,221 +6,234 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Organization Chart</title>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Essential Integrations -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- D3.js and Org Chart Library -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-org-chart@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-org-chart@2.6.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-flextree@2.1.2/build/d3-flextree.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <!-- Tom Select for searchable dropdowns -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
     <style>
-        body,
-        html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-            transition: background-color 0.3s;
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-light: #f8fafc;
+            --bg-dark: #0f172a;
+            --card-light: #ffffff;
+            --card-dark: #1e293b;
+            --text-light: #1e293b;
+            --text-dark: #f1f5f9;
+            --glass: rgba(255, 255, 255, 0.7);
+            --glass-dark: rgba(30, 41, 59, 0.7);
         }
 
-        body.dark-theme { background-color: #0f172a; }
-        body.light-theme { background-color: #f8fafc; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+            overflow: hidden;
+        }
+
+        body.light-theme {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        body.dark-theme {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
 
         /* Login Overlay */
         #login-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            inset: 0;
             background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(10px);
-            z-index: 9999;
+            z-index: 2000;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .login-card {
-            background: rgba(30, 41, 59, 0.8);
-            padding: 40px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--card-dark);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            width: 100%;
+            max-width: 400px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            width: 350px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
-            color: white;
         }
 
-        .login-card h2 { margin-bottom: 24px; font-weight: 700; }
+        .login-card h2 { margin-bottom: 1.5rem; color: #fff; font-weight: 700; }
         .login-card input {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 16px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background: #1e293b;
-            color: white;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
             box-sizing: border-box;
         }
 
-        /* Modal Styles */
-        .modal {
-            display: none;
+        .login-card button {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .login-card button:hover { background: var(--primary-hover); }
+        #login-error { color: #ef4444; font-size: 0.875rem; margin-top: 1rem; display: none; }
+
+        /* Dashboard Header */
+        .dashboard-header {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
             z-index: 1000;
-            justify-content: center;
+            background: var(--glass);
+            padding: 10px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-theme .dashboard-header {
+            background: var(--glass-dark);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
             align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(0,0,0,0.1); }
+        .dark-theme .btn-secondary { border-color: rgba(255,255,255,0.1); }
+
+        /* Chart Container */
+        .chart-container {
+            width: 100vw;
+            height: 100vh;
+            background-color: transparent;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
         }
 
         .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            width: 500px;
-            max-height: 85vh;
+            background: var(--card-light);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
             overflow-y: auto;
-            position: relative;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        .dark-theme .modal-content {
-            background: #1e293b;
-            color: #f1f5f9;
-        }
+        .dark-theme .modal-content { background: var(--card-dark); color: #fff; }
 
-        .modal-header {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .close-btn { cursor: pointer; font-size: 24px; }
-
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; font-weight: 600; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 14px; }
         .form-group input, .form-group select {
             width: 100%;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
+            padding: 0.6rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #ddd;
+            background: transparent;
+            color: inherit;
             box-sizing: border-box;
         }
 
-        .dark-theme .form-group input, .dark-theme .form-group select {
-            background: #334155;
-            border-color: #475569;
-            color: white;
-        }
-
-        .btn-primary {
-            background: #6366f1;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: 700;
-            margin-top: 10px;
-        }
-
-        .btn-primary:hover { background: #4f46e5; }
-
-        /* Chart Header */
-        .header {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            transition: background-color 0.3s;
-        }
-
-        .dark-theme .header { background: #1f2937; color: #f9fafb; }
-        .light-theme .header { background: white; color: #1f2937; }
-
-        .header h1 { margin: 0 0 10px 0; font-size: 24px; }
-        .controls { display: flex; gap: 10px; }
-
-        button {
-            padding: 8px 16px;
-            background-color: #4f46e5;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.2s;
-        }
-
-        button:hover { background-color: #4338ca; }
-
-        .theme-toggle {
-            background-color: white !important;
-            color: #111827 !important;
-            border: 1px solid #d1d5db !important;
-        }
-
-        .chart-container { width: 100%; height: 100vh; }
+        .dark-theme .form-group input, .dark-theme .form-group select { border-color: rgba(255,255,255,0.1); }
 
         #loading {
-            position: absolute;
-            top: 50%; left: 50%;
+            position: fixed;
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 20px; font-weight: 600;
-            display: none;
+            font-weight: 600;
+            z-index: 1500;
         }
 
-        .dark-theme #loading { color: #f9fafb; }
-        .light-theme #loading { color: #4b5563; }
-
-        .link {
-            stroke: #00ffcc !important;
-            stroke-width: 2.5px !important;
-        }
+        /* Tom Select Dark Mode */
+        .dark-theme .ts-control { background: #1e293b; color: #fff; border-color: rgba(255,255,255,0.1); }
+        .dark-theme .ts-dropdown { background: #1e293b; color: #fff; }
+        .dark-theme .ts-dropdown .active { background: #334155; }
     </style>
 </head>
 
 <body class="dark-theme">
     <div id="login-overlay">
         <div class="login-card">
-            <h2>Secure Access</h2>
+            <h2>Welcome Back</h2>
             <input type="text" id="login-id" placeholder="Login ID">
             <input type="password" id="login-pass" placeholder="Password">
-            <button class="btn-primary" onclick="handleLogin()">Login</button>
-            <p id="login-error" style="color: #ef4444; margin-top: 15px; display: none; font-size: 14px;">Invalid Credentials</p>
+            <button onclick="handleLogin()">Sign In</button>
+            <div id="login-error">Invalid credentials. Please try again.</div>
         </div>
     </div>
 
-    <div class="header">
-        <h1>Organization Chart</h1>
-        <div class="controls">
-            <button onclick="showAddVacancyModal()">Add Vacancy</button>
-            <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
-            <button onclick="if(window.chart) window.chart.fit()">Fit to Screen</button>
-            <button onclick="if(window.chart) window.chart.expandAll().fit()">Expand All</button>
-            <button onclick="if(window.chart) window.chart.collapseAll().fit()">Collapse All</button>
-            <button onclick="downloadPNG()">Download PNG</button>
-        </div>
+    <div id="loading" style="display: none;">Syncing Org Chart...</div>
+
+    <div class="dashboard-header">
+        <button class="btn btn-primary" onclick="showAddVacancyModal()">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Add Vacancy
+        </button>
+        <button class="btn btn-secondary" onclick="downloadPNG()">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Export PNG
+        </button>
+        <button class="btn btn-secondary" onclick="toggleTheme()">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            Theme
+        </button>
     </div>
+
+    <div class="chart-container"></div>
 
     <!-- Add Vacancy Modal -->
-    <div id="add-vacancy-modal" class="modal">
+    <div id="add-vacancy-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
-                <span>Add New Vacancy</span>
-                <span class="close-btn" onclick="closeModal('add-vacancy-modal')">&times;</span>
-            </div>
+            <h3 style="margin-top:0">New Vacancy</h3>
             <form id="add-vacancy-form">
                 <div class="form-group">
                     <label>Department</label>
@@ -234,114 +247,107 @@
                     <label>Reporting Manager</label>
                     <select id="vac-manager" required></select>
                 </div>
-                <button type="submit" class="btn-primary">Add Vacancy</button>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex:1">Add Vacancy</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('add-vacancy-modal')">Cancel</button>
+                </div>
             </form>
         </div>
     </div>
 
     <!-- Update Details Modal -->
-    <div id="update-details-modal" class="modal">
+    <div id="update-details-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
-                <span>Update Vacancy Details</span>
-                <span class="close-btn" onclick="closeModal('update-details-modal')">&times;</span>
-            </div>
+            <h3 style="margin-top:0">Fill Vacancy</h3>
             <form id="update-details-form">
                 <input type="hidden" id="target-vac-id">
-                <div class="form-group"><label>Employee ID</label><input type="text" id="upd-emp-id" required></div>
-                <div class="form-group"><label>Employee Name</label><input type="text" id="upd-emp-name" required></div>
-                <div class="form-group"><label>Date of Birth</label><input type="date" id="upd-dob" required></div>
-                <div class="form-group"><label>Date of Joining</label><input type="date" id="upd-doj" required></div>
+                <div class="form-group">
+                    <label>Employee ID</label>
+                    <input type="text" id="upd-emp-id" required>
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="upd-emp-name" required>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Date of Birth</label>
+                        <input type="date" id="upd-dob" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date of Joining</label>
+                        <input type="date" id="upd-doj" required>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label>Gender</label>
-                    <select id="upd-gender" required>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
+                    <select id="upd-gender">
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Grade</label><input type="text" id="upd-grade" required></div>
-                <div class="form-group"><label>Official Email Address</label><input type="email" id="upd-email" required></div>
-                <div class="form-group"><label>Total Experience</label><input type="text" id="upd-total-exp" required></div>
+                <div class="form-group">
+                    <label>Official Email</label>
+                    <input type="email" id="upd-email" required>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Grade</label>
+                        <input type="text" id="upd-grade" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Total Exp (Yrs)</label>
+                        <input type="number" step="0.1" id="upd-total-exp" required>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label>Confirmation Status</label>
-                    <select id="upd-confirm" required>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Probation">Probation</option>
+                    <select id="upd-confirm">
+                        <option>Confirmed</option>
+                        <option>Probation</option>
+                        <option>Contract</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Current Experience</label><input type="text" id="upd-curr-exp" required></div>
-                <div class="form-group"><label>Functions</label><select id="upd-func" required></select></div>
-                <div class="form-group"><label>Management Cadre</label><select id="upd-cadre" required></select></div>
-                <div class="form-group"><label>Phase</label><select id="upd-phase" required></select></div>
-                <button type="submit" class="btn-primary">Update and Remove Vacancy</button>
+                <div class="form-group">
+                    <label>Function</label>
+                    <select id="upd-func"></select>
+                </div>
+                <div class="form-group">
+                    <label>Phase</label>
+                    <select id="upd-phase"></select>
+                </div>
+                <div class="form-group">
+                    <label>Management Cadre</label>
+                    <select id="upd-cadre"></select>
+                </div>
+                <div class="form-group">
+                    <label>Current Exp (Yrs)</label>
+                    <input type="number" step="0.1" id="upd-curr-exp" required>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex:1">Update & Onboard</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('update-details-modal')">Cancel</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <div id="loading">Loading Data from Google Sheets...</div>
-    <div class="chart-container"></div>
-
     <script>
-        // --- Configuration & Obfuscated URLs ---
-        const _d = (s) => decodeURIComponent(escape(window.atob(s)));
-        
-        const mainUrl = _d("aHR0cHM6Ly9kcm9pdmVzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2QlZkVFFMUlhzN36QkNG-U9ZekhoN05hcEs1clRmYnE0QzQvZWRpdH3P2Zvcm1hdD1jczY=");
-        const powerUrl = _d("aHR0cHM6Ly9kcm9pdmVzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2QlZkVFFMUlhzN36QkNG-U9ZekhoN05hcEs1clRmYnE0QzVvW3Pla90cT90cXg9b3V0OmNzdGlZzaGVldD1wb3Rlcg==");
-        
-        // New URLs (Placeholder GIDs - User should update these)
-        const passwordsUrl = mainUrl.replace("gid=0", "gid=YOUR_PASSWORDS_GID"); 
-        const pictureUrl = mainUrl.replace("gid=0", "gid=YOUR_PICTURE_GID");   
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
-
-        window.chart = null;
-        let sheet1Data = [];
-
-        // --- Authentication ---
-        async function handleLogin() {
-            const id = document.getElementById('login-id').value;
-            const pass = document.getElementById('login-pass').value;
-            const errorEl = document.getElementById('login-error');
-
-            try {
-                const response = await fetch(passwordsUrl);
-                const csvText = await response.text();
-                const authData = Papa.parse(csvText, { header: true }).data;
-                const user = authData.find(u => u["Login ID"] === id && u["Password"] === pass);
-                
-                if (user || (id === "admin" && pass === "admin")) {
-                    document.getElementById('login-overlay').style.display = 'none';
-                    initChart();
-                    showConsolePicture();
-                } else {
-                    errorEl.style.display = 'block';
-                }
-            } catch (err) {
-                console.error("Auth error:", err);
-                if (id === "admin" && pass === "admin") {
-                    document.getElementById('login-overlay').style.display = 'none';
-                    initChart();
-                } else {
-                    errorEl.innerText = "Error connecting to Auth Sheet.";
-                    errorEl.style.display = 'block';
-                }
-            }
-        }
-
-        async function showConsolePicture() {
-            try {
-                const response = await fetch(pictureUrl);
-                const csvText = await response.text();
-                const picData = Papa.parse(csvText, { header: false }).data;
-                const imgUrl = picData[0][0]; 
-                console.log("%c ", `padding: 100px; background: url('${imgUrl}') no-repeat; background-size: contain;`);
-            } catch (e) { console.log("Picture not found."); }
-        }
-
-        function cleanString(str) { return str ? str.trim().replace(/\s+/g, ' ') : "Unknown"; }
-
-        async function initChart() {
-            document.getElementById('loading').style.display = 'block';
+        // --- Obfuscated Logic Loader ---
+        // Decodes and executes the main application logic
+        (function(){
+            const _atob = (s) => {
+                try {
+                    const standard = s.replace(/-/g, '+').replace(/_/g, '/');
+                    while (standard.length % 4) standard += '=';
+                    return window.atob(standard);
+                } catch(e) { return s; }
+            };
+            // The following Base64 string contains the core application logic.
+            const coreLogic = "ICAgICAgICAvLyAtLS0gQ29uZmlndXJhdGlvbiAmIE9iZnVzY2F0ZWQgVVJMcyAtLS0KICAgICAgICBjb25zdCBfYXRvYiA9IChzKSA9PiB7CiAgICAgICAgICAgIHRyeSB7IAogICAgICAgICAgICAgICAgaWYgKCFzKSByZXR1cm4gIiI7CiAgICAgICAgICAgICAgICAvLyBIYW5kbGUgVVJMLXNhZmUgYmFzZTY0IGFuZCBlbnN1cmUgcGFkZGluZwogICAgICAgICAgICAgICAgbGV0IHN0YW5kYXJkID0gcy5yZXBsYWNlKC8tL2csICcrJykucmVwbGFjZSgvXy9nLCAnLycpOwogICAgICAgICAgICAgICAgd2hpbGUgKHN0YW5kYXJkLmxlbmd0aCAlIDQpIHN0YW5kYXJkICs9ICc9JzsKICAgICAgICAgICAgICAgIHJldHVybiB3aW5kb3cuYXRvYihzdGFuZGFyZCk7IAogICAgICAgICAgICB9IGNhdGNoKGUpIHsgCiAgICAgICAgICAgICAgICBjb25zb2xlLndhcm4oIkJhc2U2NCBkZWNvZGUgZmFpbGVkIGZvcjoiLCBzLCBlKTsKICAgICAgICAgICAgICAgIHJldHVybiBzOyAKICAgICAgICAgICAgfQogICAgICAgIH07CiAgICAgICAgCiAgICAgICAgLy8gVGhlc2JlIGFyZSB0aGUgVVJMcyBmcm9tIHlvdXIgc2hlZXQgKFJFUEFJUkVEKQogICAgICAgIGNvbnN0IG1haW5VcmwgPSBfYXRvYigiYUhRMG9ITTZMeTlrYjJOekxtZHZiMmRzWlM1amIyMHZjM0J5WldGa2MyaGxaWFJ6TDJRdk1YUlpZMjVEVlVjMlFsWmtWRkZNVWxoek4zNlFrTkctVTlaZWtob04wNWhjRXMxY2xSbVluRTBRelF2WldScGRIM1AyWnZjbTFoZEQxamN6WT0iKTsKICAgICAgICBjb25zdCBwb3dlclVybCA9IF9hdG9iKCJhSFIwY0hNNkx5OWtiMk56TG1kdmIyZHNaUzVqYjIwdmMzQnlaV0ZrYzJobFpYUnpMMlF2TVhSWlkyNURWVWMyUWxaa1ZGRk1VbGh6TjM2UWtORy1VOVpla2hvTjA1aGNFczFjbFJtWW5FMFF6VnZczUGxhOTBjVDkwY1hnOWIzVjBPbU56ZEdsWnphR1ZsZEQxd2IzUmxjZz09Iik7CiAgICAgICAgCiAgICAgICAgLy8gQ29uZmlndXJhdGlvbiAtIFVzZXIgbXVzdCB1cGRhdGUgdGhlc2UgR0lEcyBpbiB0aGUgc2NyaXB0IG9yIGluIHRoZSBTaGVldCBVUkxzCiAgICAgICAgY29uc3QgcGFzc3dvcmRzVXJsID0gbWFpblVybC5pbmNsdWRlcygiZ2lkPSIpID8gbWFpblVybC5yZXBsYWNlKC9naWQ9XGQrLywgImdpZD1ZT1VSX1BBU1NXT1JEU19HSUQiKSA6IG1haW5VcmwgKyAiJmdpZD1ZT1VSX1BBU1NXT1JEU19HSUQiOwogICAgICAgIGNvbnN0IHBpY3R1cmVVcmwgPSBtYWluVXJsLmluY2x1ZGVzKCJnaWQ9IikgPyBtYWluVXJsLnJlcGxhY2UoL2dpZD1cZCsvLCAiZ2lkPVlPVVJfUElDVFVSRV9HSUQiKSA6IG1haW5VcmwgKyAiJmdpZD1ZT1VSX1BJQ1RVUkVfR0lEIjsKICAgICAgICBjb25zdCBBUFBTX1NDUklQVF9VUkwgPSAiaHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9ZT1VSX1NDUklQVF9JRC9leGVjIjsKCiAgICAgICAgd2luZG93LmNoYXJ0ID0gbnVsbDsKICAgICAgICBsZXQgc2hlZXQxRGF0YSA9IFtdOwoKICAgICAgICAvLyAtLS0gQXV0aGVudGljYXRpb24gLS0tCiAgICAgICAgd2luZG93LmhhbmRsZUxvZ2luID0gYXN5bmMgZnVuY3Rpb24oKSB7CiAgICAgICAgICAgIGNvbnN0IGlkID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2xvYWRpbi1pZCcpLnZhbHVlOwogICAgICAgICAgICBjb25zdCBwYXNzID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2xvYWRpbi1wYXNzJykudmFsdWU7CiAgICAgICAgICAgIGNvbnN0IGVycm9yRWwgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbG9naW4tZXJyb3InKTsKCiAgICAgICAgICAgIGlmIChpZCA9PT0gImFkbWluIiAmJiBwYXNzID09PSAiYWRtaW4iKSB7CiAgICAgICAgICAgICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbG9naW4tb3ZlcmxheScpLnN0eWxlLmRpc3BsYXkgPSAnbm9uZSc7CiAgICAgICAgICAgICAgICBpbml0Q2hhcnQoKTsKICAgICAgICAgICAgICAgIHJldHVybjsKICAgICAgICAgICAgfQoKICAgICAgICAgICAgHRyeSB7CiAgICAgICAgICAgICAgICBjb25zdCByZXNwb25zZSA9IGF3YWl0IGZldGNoKHBhc3N3b3Jkc1VybCk7CiAgICAgICAgICAgICAgICBpZiAoIXJlc3BvbnNlLm9rKSB0aHJvdyBuZXcgRXJyb3IoIlNoZWV0IGFjY2VzcyBibG9ja2VkIG9yIFVSTCBpbnZhbGlkIik7CiAgICAgICAgICAgICAgICBjb25zdCBjc3ZUZXh0ID0gYXdhaXQgcmVzcG9uc2UudGV4dCgpOwogICAgICAgICAgICAgICAgY29uc3QgYXV0aERhdGEgPSBQYXBhLnBhcnNlKGNzdlRleHQsIHsgaGVhZGVyOiB0cnVlIH0pLmRhdGE7CiAgICAgICAgICAgICAgICBjb25zdCB1c2VyID0gYXV0aERhdGEuZmluZCh1ID0+IHVbIkxvZ2luIElEIl0gPT09IGlkICYmIHVbIlBhc3N3b3JkIl0gPT09IHBhc3MpOwogICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICBpZiAodXNlcikgewogICAgICAgICAgICAgICAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdsb2dpbi1vdmVybGF5Jykuc3R5bGUuZGlzcGxheSA9ICdub25lJzsKICAgICAgICAgICAgICAgICAgICBpbml0Q2hhcnQoKTsKICAgICAgICAgICAgICAgICAgICBzaG93Q29uc29sZVBpY3R1cmUoKTsKICAgICAgICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgICAgICAgICAgZXJyb3JFbC5zdHlsZS5kaXNwbGF5ID0gJ2Jsb2NrJzsKICAgICAgICAgICAgICAgICAgICBlcnJvckVsLmlubmVyVGV4dCA9ICJJbnZhbGlkIElEIG9yIFBhc3N3b3JkIjsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSBjYXRjaCAoZXJyKSB7CiAgICAgICAgICAgICAgICBjb25zb2xlLmVycm9yKCJBdXRoIGVycm9yOiIsIGVycik7CiAgICAgICAgICAgICAgICBlcnJvckVsLmlubmVyVGV4dCA9ICJBdXRoIGZhaWxlZC4gRW5zdXJlIFBBU1NXT1JEU19HSUQgaXMgY29ycmVjdCBhbmQgYWNjZXNzIGlzIHB1YmxpYy4iOwogICAgICAgICAgICAgICAgZXJyb3JFbC5zdHlsZS5kaXNwbGF5ID0gJ2Jsb2NrJzsKICAgICAgICAgICAgfQogICAgICAgIH07CgogICAgICAgIGFzeW5jIGZ1bmN0aW9uIHNob3dDb25zb2xlUGljdHVyZSgpIHsKICAgICAgICAgICAgdHJ5IHsKICAgICAgICAgICAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2gocGljdHVyZVVybCk7CiAgICAgICAgICAgICAgICBjb25zdCBjc3ZUZXh0ID0gYXdhaXQgcmVzcG9uc2UudGV4dCgpOwogICAgICAgICAgICAgICAgY29uc3QgcGljRGF0YSA9IFBhcGEucGFyc2UoY3N2VGV4dCwgeyBoZWFkZXI6IGZhbHNlIH0pLmRhdGE7CiAgICAgICAgICAgICAgICBjb25zdCBpbWdVcmwgPSBwaWNEYXRhWzBdWzBdOyAKICAgICAgICAgICAgICAgIGlmIChpbWdVcmwgJiYgaW1nVXJsLnN0YXJ0c1dpdGgoJ2h0dHAnKSkgewogICAgICAgICAgICAgICAgICAgIGNvbnNvbGUubG9nKCIlYyAiLCBgcGFkZGluZzogMTAwcHg7IGJhY2tncm91bmQ6IHVybCgnJHtpbWdVcmx9Jykgbm8tcmVwZWF0OyBiYWNrZ3JvdW5kLXNpemU6IGNvbnRhaW47YCk7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0gY2F0Y2ggKGUpIHsgY29uc29sZS5sb2coIkxvZ2luIHBpY3R1cmUgbm90IGNvbmZpZ3VyZWQuIik7IH0KICAgICAgICB9CgogICAgICAgIGZ1bmN0aW9uIGNsZWFuU3RyaW5nKHN0cikgeyByZXR1cm4gc3RyID8gc3RyLnRyaW0oKS5yZXBsYWNlKC9ccysvZywgJyAnKSA6ICJVbmtub3duIjsgfQoKICAgICAgICBhc3luYyBmdW5jdGlvbiBpbml0Q2hhcnQoKS {
+            const loadingEl = document.getElementById('loading');
+            loadingEl.style.display = 'block';
             try {
                 const [mainRes, powerRes] = await Promise.all([
                     new Promise((res, rej) => Papa.parse(mainUrl, { download: true, header: true, complete: res, error: rej })),
@@ -352,7 +358,7 @@
                 const powerMap = {};
                 powerRes.data.forEach(row => {
                     const desig = row["Current Designation"];
-                    if (desig) powerMap[desig.trim().toUpperCase()] = {
+                    if (desig) powerMap[desig.toUpperCase()] = {
                         level: parseInt(row["Level"]) || 99,
                         corresponding: (row["Corresponding"] || "").trim()
                     };
@@ -448,9 +454,9 @@
 
                 renderChart(nodes);
                 populateDropdowns();
-                document.getElementById('loading').style.display = 'none';
+                loadingEl.style.display = 'none';
             } catch (err) {
-                document.getElementById('loading').innerText = 'Error loading data.';
+                loadingEl.innerText = 'Error loading data.';
                 console.error(err);
             }
         }
@@ -496,8 +502,8 @@
                         ${extra}
                         ${updateBtn}
                         <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px;font-weight:600;color:${subColor};">
-                            <div><span style="color:#10b981;margin-right:3px;">●</span>Rep: ${d.data.reportees || 0}</div>
-                            <div><span style="color:#ef4444;margin-right:3px;">●</span>Vac: ${d.data.vacancies || 0}</div>
+                            <div><span style="color:#10b981;margin-right:3px;">*</span>Rep: ${d.data.reportees || 0}</div>
+                            <div><span style="color:#ef4444;margin-right:3px;">*</span>Vac: ${d.data.vacancies || 0}</div>
                         </div>
                     </div>`;
                 })
@@ -505,8 +511,8 @@
             setTimeout(() => { if(window.chart) window.chart.collapseAll().fit(); }, 200);
         }
 
-        function showAddVacancyModal() { document.getElementById('add-vacancy-modal').style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        window.showAddVacancyModal = function() { document.getElementById('add-vacancy-modal').style.display = 'flex'; };
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
 
         function populateDropdowns() {
             const depts = [...new Set(sheet1Data.map(r => cleanString(r["Current Department"])).filter(d => d !== "Unknown"))];
@@ -538,10 +544,10 @@
             closeModal('add-vacancy-modal');
         };
 
-        function showUpdateModal(vacId) {
+        window.showUpdateModal = function(vacId) {
             document.getElementById('target-vac-id').value = vacId;
             document.getElementById('update-details-modal').style.display = 'flex';
-        }
+        };
 
         document.getElementById('update-details-form').onsubmit = async (e) => {
             e.preventDefault();
@@ -574,7 +580,7 @@
             } catch (err) { alert("Submission failed."); }
         }
 
-        function downloadPNG() {
+        window.downloadPNG = function() {
             if (!window.chart) return;
             const activeNode = window.chart.getChartState().allNodes.find(n => n.active);
             window.chart.exportImg({
@@ -585,14 +591,15 @@
                     link.href = dataUrl; link.click();
                 }
             });
-        }
+        };
 
-        function toggleTheme() {
+        window.toggleTheme = function() {
             document.body.classList.toggle('dark-theme');
             document.body.classList.toggle('light-theme');
             if (window.chart) window.chart.render();
-        }
+        };";
+            eval(_atob(coreLogic));
+        })();
     </script>
 </body>
-
 </html>
