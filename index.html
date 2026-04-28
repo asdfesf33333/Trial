@@ -242,19 +242,22 @@
             padding: 0.6rem 1rem !important;
             border: 1px solid #ddd !important;
         }
-        
-        .dark-theme .ts-control, .dark-theme .ts-control input {
+
+        .dark-theme .ts-control,
+        .dark-theme .ts-control input {
             background-color: #1e293b !important;
             color: #fff !important;
             border-color: rgba(255, 255, 255, 0.1) !important;
         }
 
-        .dark-theme .ts-dropdown, .dark-theme .ts-dropdown .option {
+        .dark-theme .ts-dropdown,
+        .dark-theme .ts-dropdown .option {
             background-color: #1e293b !important;
             color: #fff !important;
         }
 
-        .dark-theme .ts-dropdown .option.active, .dark-theme .ts-dropdown .option:hover {
+        .dark-theme .ts-dropdown .option.active,
+        .dark-theme .ts-dropdown .option:hover {
             background-color: #334155 !important;
             color: #fff !important;
         }
@@ -421,7 +424,7 @@
         const powerUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3YmZ2lkPTIwNDUzNTIzNTY=");
         const passwordsUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3YmZ2lkPTEyOTY4MzkxMA==");
         const pictureUrl = _atob("aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvMXRZY25DVUc2Q2lZVkVFMUloZzN6QkNGLU9ZekhoN05hcEs1clRmYnE0QzQvZXhwb3J0P2Zvcm1hdD1jc3YmZ2lkPTY4MDU0NTYzNQ==");
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/1y7c-uKCPCQXezzFOXulhDBxwzUiGJ4x4zI-1LI9wq4ttj1Dd_kmiCmfN/exec";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyQp6OLVFscWOv-dS0zif2WsIJisIRTOeCOndd98jn_fOagEKpp-55OP64cxQfbz2RH/exec";
 
         window.chart = null;
         let sheet1Data = [];
@@ -467,18 +470,18 @@
         async function showConsolePicture() {
             try {
                 // Supplemental textual warning
-                console.log("%c STOP! \n%cThis is a restricted corporate dashboard. Unauthorized inspection is prohibited.", 
-                            "color: red; font-size: 50px; font-weight: bold; font-family: sans-serif; text-shadow: 2px 2px 0px black;", 
-                            "color: white; font-size: 16px; background: #1e293b; padding: 10px; border-radius: 5px;");
-                            
+                console.log("%c STOP! \n%cThis is a restricted corporate dashboard. Unauthorized inspection is prohibited.",
+                    "color: red; font-size: 50px; font-weight: bold; font-family: sans-serif; text-shadow: 2px 2px 0px black;",
+                    "color: white; font-size: 16px; background: #1e293b; padding: 10px; border-radius: 5px;");
+
                 const response = await fetch(pictureUrl);
                 const csvText = await response.text();
                 const picData = Papa.parse(csvText, { header: false }).data;
-                let imgStr = picData[0][0]; 
+                let imgStr = picData[0][0];
                 if (imgStr) {
                     imgStr = imgStr.trim();
                     let finalUrl = imgStr;
-                    
+
                     // Try decoding using our base64 _atob
                     let decoded = _atob(imgStr);
                     if (decoded.startsWith('http') || decoded.startsWith('data:')) {
@@ -487,12 +490,12 @@
                         // Assuming raw base64 image content without data prefix
                         finalUrl = `data:image/png;base64,${imgStr}`;
                     }
-                    
+
                     console.log("%c ", `padding: 150px; line-height: 300px; background: url('${finalUrl}') no-repeat center; background-size: contain;`);
                 }
             } catch (e) { console.log("Login picture not configured."); }
         }
-        
+
         // Execute immediately to appear as soon as DevTools is opened
         showConsolePicture();
 
@@ -741,12 +744,12 @@
 
         async function submitToSheet(data) {
             try {
-                await fetch(APPS_SCRIPT_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    cache: 'no-cache', 
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                    body: JSON.stringify(data) 
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(data)
                 });
                 alert("Submitted successfully.");
             } catch (err) { alert("Submission failed."); }
@@ -754,7 +757,7 @@
 
         window.downloadPNG = function () {
             if (!window.chart) return;
-            
+
             if (activeNodeId) {
                 // Collapse all unselected branches and only expand the selected one
                 window.chart.collapseAll();
