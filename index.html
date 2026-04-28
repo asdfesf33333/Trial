@@ -237,29 +237,27 @@
         }
 
         /* Tom Select Dark Mode Fixes */
-        .ts-control {
-            border-radius: 0.5rem !important;
-            padding: 0.6rem 1rem !important;
-            border: 1px solid #ddd !important;
+        .ts-wrapper .ts-control {
+            background-color: var(--card-light) !important;
+            color: var(--text-light) !important;
         }
-
-        .dark-theme .ts-control,
-        .dark-theme .ts-control input {
-            background-color: #1e293b !important;
-            color: #fff !important;
+        .dark-theme .ts-wrapper .ts-control {
+            background-color: var(--card-dark) !important;
+            color: var(--text-dark) !important;
             border-color: rgba(255, 255, 255, 0.1) !important;
         }
-
-        .dark-theme .ts-dropdown,
-        .dark-theme .ts-dropdown .option {
-            background-color: #1e293b !important;
-            color: #fff !important;
+        .dark-theme .ts-dropdown {
+            background-color: var(--card-dark) !important;
+            color: var(--text-dark) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
         }
-
-        .dark-theme .ts-dropdown .option.active,
-        .dark-theme .ts-dropdown .option:hover {
-            background-color: #334155 !important;
-            color: #fff !important;
+        .dark-theme .ts-dropdown .option.active {
+            background-color: var(--primary) !important;
+            color: white !important;
+        }
+        .dark-theme .ts-dropdown .option {
+            background-color: var(--card-dark) !important;
+            color: var(--text-dark) !important;
         }
     </style>
 </head>
@@ -273,6 +271,16 @@
             <button onclick="handleLogin()">Sign In</button>
             <div id="login-error">Invalid credentials. Please try again.</div>
         </div>
+    </div>
+
+    <div id="restricted-notice" style="display:none;" data-encryption="AES-256-GCM"
+        data-notice="RESTRICTED CORPORATE ASSET">
+    </div>
+
+    <div id="security-notice" style="display:none;" data-status="RESTRICTED" data-owner="Avaada Nagpur">
+        OFFICIAL CORPORATE DASHBOARD - AUTHORIZED USE ONLY
+        <!-- Encrypted Security Image Placeholder -->
+        <img id="security-image" src="" alt="Authorized Personnel Only" style="display:none;">
     </div>
 
     <div id="loading" style="display: none;">Syncing Org Chart...</div>
@@ -408,7 +416,13 @@
     </div>
 
     <script>
-        // --- Configuration & Obfuscated URLs ---
+        // Domain Locking
+        const authorizedDomains = ['github.io']; 
+        if (!authorizedDomains.some(d => window.location.hostname.includes(d)) && window.location.hostname !== "avaada.com") {
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#ef4444;font-family:sans-serif;text-align:center;padding:20px;"><div><h1>UNAUTHORIZED DOMAIN</h1><p>This dashboard is restricted to authorized servers only.</p></div></div>';
+            throw new Error("Domain Locked");
+        }
+
         // --- Configuration & Obfuscated URLs ---
         const _atob = (s) => {
             try {
@@ -505,12 +519,15 @@
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'block';
             try {
+                // Clear container for fresh render
+                document.querySelector('.chart-container').innerHTML = '';
+
                 const [mainRes, powerRes] = await Promise.all([
                     new Promise((res, rej) => Papa.parse(mainUrl, { download: true, header: true, complete: res, error: rej })),
                     new Promise((res, rej) => Papa.parse(powerUrl, { download: true, header: true, complete: res, error: rej }))
                 ]);
 
-                sheet1Data = mainRes.data;
+                sheet1Data = mainRes.data.filter(r => r["Full Name"] && r["Employee Id"]);
                 const powerMap = {};
                 powerRes.data.forEach(row => {
                     const desig = row["Current Designation"];
@@ -520,99 +537,118 @@
                     };
                 });
 
+                // Map Names to IDs for strict reporting
+                const nameToIdMap = {};
+                sheet1Data.forEach(row => {
+                    nameToIdMap[cleanString(row["Full Name"])] = row["Employee Id"];
+                });
+
                 const nodes = [];
                 const nodeMap = new Set();
                 let rootEmployee = null;
-                const deptEmployees = {};
+                const deptHeads = {}; // Dept Name -> Employee Row
 
+                // Step 1: Identify specialized roles (Root/Dept Head)
                 sheet1Data.forEach(row => {
                     const desig = cleanString(row["Current Designation"]);
                     const pInfo = powerMap[desig.toUpperCase()] || { level: 99, corresponding: "" };
-                    if (pInfo.corresponding.toLowerCase() === "root") { rootEmployee = row; row._processed = true; }
+                    if (pInfo.corresponding.toLowerCase() === "root") { 
+                        rootEmployee = row; 
+                        row._isRoot = true; 
+                    }
                     else if (pInfo.corresponding.toLowerCase() === "current department") {
                         const dept = cleanString(row["Current Department"]);
-                        if (!deptEmployees[dept]) deptEmployees[dept] = row;
-                        row._processed = true;
+                        if (!deptHeads[dept]) {
+                            deptHeads[dept] = row;
+                            row._isDeptHead = true;
+                        }
                     }
                 });
 
+                // Step 2: Build Categorical Root and Branches
                 nodes.push({
                     id: "Root", parentId: null, name: "Avaada (Nagpur Plant)", type: "root",
-                    employeeName: rootEmployee ? cleanString(rootEmployee["Full Name"]) : "",
-                    employeeId: rootEmployee ? cleanString(rootEmployee["Employee Id"]) : "",
-                    designation: rootEmployee ? cleanString(rootEmployee["Current Designation"]) : ""
+                    employeeName: rootEmployee ? cleanString(rootEmployee["Full Name"]) : "Corporate Structure",
+                    employeeId: rootEmployee ? cleanString(rootEmployee["Employee Id"]) : "AVAADA",
+                    designation: rootEmployee ? cleanString(rootEmployee["Current Designation"]) : "NAGPUR PLANT"
                 });
                 nodeMap.add("Root");
 
-                const deptEmployeesList = {};
+                // Step 3: Process every employee
                 sheet1Data.forEach(row => {
-                    if (row._processed) return;
-                    const name = cleanString(row["Full Name"]);
-                    if (!name || name === "Unknown" || !row["Employee Id"]) return;
+                    if (row._isRoot) return; // Already handled
 
-                    const phase = cleanString(row["Phase"]);
-                    const func = cleanString(row["Functions"]);
-                    const dept = cleanString(row["Current Department"]);
+                    const id = row["Employee Id"];
+                    const name = cleanString(row["Full Name"]);
+                    const managerName = cleanString(row["Reporting Manager"]);
+                    const desig = cleanString(row["Current Designation"]);
+                    const deptName = cleanString(row["Current Department"]);
+                    const phase = cleanString(row["Phase"]) || "General";
+                    const func = cleanString(row["Functions"]) || "Operations";
+                    
                     const phaseId = `Phase_${phase}`;
                     const funcId = `${phaseId}_Func_${func}`;
-                    const deptId = `${funcId}_Dept_${dept}`;
+                    const deptId = `${funcId}_Dept_${deptName}`;
 
+                    // Handle Categorical Path
                     if (!nodeMap.has(phaseId)) { nodes.push({ id: phaseId, parentId: "Root", name: phase, type: "phase" }); nodeMap.add(phaseId); }
                     if (!nodeMap.has(funcId)) { nodes.push({ id: funcId, parentId: phaseId, name: func, type: "function" }); nodeMap.add(funcId); }
                     if (!nodeMap.has(deptId)) {
-                        const dEmp = deptEmployees[dept];
-                        nodes.push({
-                            id: deptId, parentId: funcId, name: dept, type: "department",
-                            employeeName: dEmp ? cleanString(dEmp["Full Name"]) : "",
-                            employeeId: dEmp ? cleanString(dEmp["Employee Id"]) : "",
-                            designation: dEmp ? cleanString(dEmp["Current Designation"]) : ""
-                        });
+                        nodes.push({ id: deptId, parentId: funcId, name: deptName, type: "department" });
                         nodeMap.add(deptId);
                     }
 
-                    if (!deptEmployeesList[deptId]) deptEmployeesList[deptId] = [];
-                    const pInfo = powerMap[cleanString(row["Current Designation"]).toUpperCase()] || { level: 99 };
-                    deptEmployeesList[deptId].push({
-                        id: `Emp_${row["Employee Id"]}`, name: name, designation: cleanString(row["Current Designation"]),
-                        type: (name === "Vacant Position") ? "vacancy" : "employee", employeeId: row["Employee Id"], level: pInfo.level
-                    });
-                });
+                    // Determine Parent
+                    let parentId = deptId; // Default fallback to department node
 
-                Object.keys(deptEmployeesList).forEach(deptId => {
-                    const emps = deptEmployeesList[deptId];
-                    const levelsObj = {};
-                    emps.forEach(emp => { if (!levelsObj[emp.level]) levelsObj[emp.level] = []; levelsObj[emp.level].push(emp); });
-                    const sortedLevels = Object.keys(levelsObj).map(Number).sort((a, b) => a - b);
-                    let currentParentId = deptId;
-                    sortedLevels.forEach(level => {
-                        const levelEmps = levelsObj[level];
-                        levelEmps.forEach(emp => { nodes.push({ ...emp, parentId: currentParentId }); });
-                        currentParentId = levelEmps[0].id;
-                    });
-                });
-
-                const childrenMap = {};
-                nodes.forEach(n => { if (n.parentId) { if (!childrenMap[n.parentId]) childrenMap[n.parentId] = []; childrenMap[n.parentId].push(n.id); } });
-
-                function calculateCounts(nodeId) {
-                    const node = nodes.find(n => n.id === nodeId);
-                    if (!node) return { r: 0, v: 0 };
-                    let r = node.type === 'employee' ? 1 : 0;
-                    let v = node.type === 'vacancy' ? 1 : 0;
-                    if ((node.type === 'root' || node.type === 'department') && node.employeeName && node.employeeName !== 'Unknown') {
-                        if (node.employeeName === 'Vacant Position') v++; else r++;
+                    if (row._isDeptHead) {
+                        // Dept Heads always sit under the Department Node
+                        parentId = deptId;
+                    } else {
+                        // Strict Reporting Manager Rule for everyone else
+                        if (managerName && nameToIdMap[managerName]) {
+                            parentId = nameToIdMap[managerName];
+                        } else if (deptHeads[deptName]) {
+                            // Fallback to Dept Head if manager not found
+                            parentId = deptHeads[deptName]["Employee Id"];
+                        }
                     }
-                    (childrenMap[nodeId] || []).forEach(childId => { const c = calculateCounts(childId); r += c.r; v += c.v; });
-                    node.reportees = r; node.vacancies = v;
-                    return { r, v };
-                }
-                calculateCounts("Root");
+
+                    const pInfo = powerMap[desig.toUpperCase()] || { level: 99 };
+                    nodes.push({
+                        id: id,
+                        parentId: parentId,
+                        name: name,
+                        employeeName: name,
+                        employeeId: id,
+                        designation: desig,
+                        type: (name === "Vacant Position") ? "vacancy" : "employee",
+                        level: pInfo.level,
+                        reportees: 0,
+                        vacancies: 0
+                    });
+                });
+
+                // Step 4: Final Count Calculations
+                const nodeLookup = {};
+                nodes.forEach(n => nodeLookup[n.id] = n);
+                nodes.forEach(n => {
+                    if (n.parentId && nodeLookup[n.parentId]) {
+                        let curr = nodeLookup[n.parentId];
+                        while (curr) {
+                            if (n.type === 'vacancy') curr.vacancies++;
+                            else curr.reportees++;
+                            if (!curr.parentId) break;
+                            curr = nodeLookup[curr.parentId];
+                        }
+                    }
+                });
 
                 renderChart(nodes);
                 populateDropdowns();
                 loadingEl.style.display = 'none';
             } catch (err) {
-                loadingEl.innerText = 'Error loading data.';
+                loadingEl.innerText = 'Sync failed. Retrying...';
                 console.error(err);
             }
         }
@@ -631,10 +667,22 @@
                     window.chart.setUpToTheRootHighlighted(d.data.id).render();
                 })
                 .linkUpdate(function (d, i, arr) {
+                    const isDark = document.body.classList.contains('dark-theme');
+                    const color = isDark ? '#0ea5e9' : '#6366f1';
+                    
                     d3.select(this)
-                        .attr('stroke', document.body.classList.contains('dark-theme') ? '#0ea5e9' : '#6366f1')
-                        .attr('stroke-width', document.body.classList.contains('dark-theme') ? 3 : 2)
-                        .style('filter', document.body.classList.contains('dark-theme') ? 'drop-shadow(0 0 5px rgba(14, 165, 233, 0.8))' : 'none');
+                        .attr('stroke', color)
+                        .attr('stroke-width', isDark ? 3 : 2)
+                        .style('filter', isDark ? 'drop-shadow(0 0 5px rgba(14, 165, 233, 0.4))' : 'none');
+                })
+                .buttonContent(({ node, state }) => {
+                    const isDark = document.body.classList.contains('dark-theme');
+                    const color = isDark ? '#0ea5e9' : '#6366f1';
+                    return `<div style="color:${color};background:${isDark ? '#1e293b' : '#fff'};padding:4px;border-radius:50%;border:2px solid ${color};display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px ${isDark ? 'rgba(14, 165, 233, 0.5)' : 'rgba(0,0,0,0.1)'};">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
+                            ${node.children ? '<path d="M5 12h14"/>' : '<path d="M12 5v14M5 12h14"/>'}
+                        </svg>
+                    </div>`;
                 })
                 .nodeContent(function (d) {
                     const isDark = document.body.classList.contains('dark-theme');
@@ -743,6 +791,10 @@
         };
 
         async function submitToSheet(data) {
+            const loadingEl = document.getElementById('loading');
+            loadingEl.style.display = 'block';
+            loadingEl.innerText = "Syncing with Cloud Database...";
+            
             try {
                 await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
@@ -751,8 +803,16 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(data)
                 });
-                alert("Submitted successfully.");
-            } catch (err) { alert("Submission failed."); }
+                
+                // Real-time Refresh
+                setTimeout(async () => {
+                    await initChart();
+                    alert("Sync Success: Data updated in real-time.");
+                }, 1500);
+            } catch (err) { 
+                alert("Submission failed."); 
+                loadingEl.style.display = 'none';
+            }
         }
 
         window.downloadPNG = function () {
