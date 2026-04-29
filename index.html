@@ -241,20 +241,24 @@
             background-color: var(--card-light) !important;
             color: var(--text-light) !important;
         }
+
         .dark-theme .ts-wrapper .ts-control {
             background-color: var(--card-dark) !important;
             color: var(--text-dark) !important;
             border-color: rgba(255, 255, 255, 0.1) !important;
         }
+
         .dark-theme .ts-dropdown {
             background-color: var(--card-dark) !important;
             color: var(--text-dark) !important;
             border-color: rgba(255, 255, 255, 0.1) !important;
         }
+
         .dark-theme .ts-dropdown .option.active {
             background-color: var(--primary) !important;
             color: white !important;
         }
+
         .dark-theme .ts-dropdown .option {
             background-color: var(--card-dark) !important;
             color: var(--text-dark) !important;
@@ -416,13 +420,6 @@
     </div>
 
     <script>
-        // Domain Locking
-        const authorizedDomains = ['github.io']; 
-        if (!authorizedDomains.some(d => window.location.hostname.includes(d)) && window.location.hostname !== "avaada.com") {
-            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#ef4444;font-family:sans-serif;text-align:center;padding:20px;"><div><h1>UNAUTHORIZED DOMAIN</h1><p>This dashboard is restricted to authorized servers only.</p></div></div>';
-            throw new Error("Domain Locked");
-        }
-
         // --- Configuration & Obfuscated URLs ---
         const _atob = (s) => {
             try {
@@ -527,109 +524,131 @@
                     new Promise((res, rej) => Papa.parse(powerUrl, { download: true, header: true, complete: res, error: rej }))
                 ]);
 
-                sheet1Data = mainRes.data.filter(r => r["Full Name"] && r["Employee Id"]);
+                // Robust Header Detection
+                const getRowValue = (row, ...keys) => {
+                    const rowKeys = Object.keys(row);
+                    for (const k of keys) {
+                        const found = rowKeys.find(rk => rk.trim().toLowerCase() === k.toLowerCase());
+                        if (found) return row[found];
+                    }
+                    return null;
+                };
+
+                sheet1Data = mainRes.data.filter(r => getRowValue(r, "Full Name", "Name") && getRowValue(r, "Employee Id", "Employee ID"));
+                console.log("Data Rows Loaded:", sheet1Data.length);
+
                 const powerMap = {};
                 powerRes.data.forEach(row => {
-                    const desig = row["Current Designation"];
+                    const desig = getRowValue(row, "Current Designation", "Designation");
                     if (desig) powerMap[desig.toUpperCase()] = {
-                        level: parseInt(row["Level"]) || 99,
-                        corresponding: (row["Corresponding"] || "").trim()
+                        level: parseInt(getRowValue(row, "Level")) || 99,
+                        corresponding: (getRowValue(row, "Corresponding") || "").trim()
                     };
-                });
-
-                // Map Names to IDs for strict reporting
-                const nameToIdMap = {};
-                sheet1Data.forEach(row => {
-                    nameToIdMap[cleanString(row["Full Name"])] = row["Employee Id"];
                 });
 
                 const nodes = [];
                 const nodeMap = new Set();
                 let rootEmployee = null;
-                const deptHeads = {}; // Dept Name -> Employee Row
 
-                // Step 1: Identify specialized roles (Root/Dept Head)
+                // Step 1: Identify specialized roles (Root)
                 sheet1Data.forEach(row => {
-                    const desig = cleanString(row["Current Designation"]);
+                    const desig = cleanString(getRowValue(row, "Current Designation", "Designation"));
                     const pInfo = powerMap[desig.toUpperCase()] || { level: 99, corresponding: "" };
-                    if (pInfo.corresponding.toLowerCase() === "root") { 
-                        rootEmployee = row; 
-                        row._isRoot = true; 
-                    }
-                    else if (pInfo.corresponding.toLowerCase() === "current department") {
-                        const dept = cleanString(row["Current Department"]);
-                        if (!deptHeads[dept]) {
-                            deptHeads[dept] = row;
-                            row._isDeptHead = true;
-                        }
+                    if (pInfo.corresponding.toLowerCase() === "root") {
+                        rootEmployee = row;
+                        row._isRoot = true;
                     }
                 });
 
                 // Step 2: Build Categorical Root and Branches
                 nodes.push({
                     id: "Root", parentId: null, name: "Avaada (Nagpur Plant)", type: "root",
-                    employeeName: rootEmployee ? cleanString(rootEmployee["Full Name"]) : "Corporate Structure",
-                    employeeId: rootEmployee ? cleanString(rootEmployee["Employee Id"]) : "AVAADA",
-                    designation: rootEmployee ? cleanString(rootEmployee["Current Designation"]) : "NAGPUR PLANT"
+                    employeeName: rootEmployee ? cleanString(getRowValue(rootEmployee, "Full Name", "Name")) : "Corporate Structure",
+                    employeeId: rootEmployee ? cleanString(getRowValue(rootEmployee, "Employee Id", "Employee ID")) : "AVAADA",
+                    designation: rootEmployee ? cleanString(getRowValue(rootEmployee, "Current Designation", "Designation")) : "NAGPUR PLANT",
+                    reportees: 0,
+                    vacancies: 0
                 });
                 nodeMap.add("Root");
 
-                // Step 3: Process every employee
-                sheet1Data.forEach(row => {
-                    if (row._isRoot) return; // Already handled
+                // Step 3: Map and Sort Employees by Level from power sheet
+                const processedEmployees = sheet1Data
+                    .filter(row => !row._isRoot)
+                    .map(row => {
+                        const desig = cleanString(getRowValue(row, "Current Designation", "Designation"));
+                        const pInfo = powerMap[desig.toUpperCase()] || { level: 99 };
+                        return { ...row, _level: pInfo.level };
+                    })
+                    .sort((a, b) => a._level - b._level);
 
-                    const id = row["Employee Id"];
-                    const name = cleanString(row["Full Name"]);
-                    const managerName = cleanString(row["Reporting Manager"]);
-                    const desig = cleanString(row["Current Designation"]);
-                    const deptName = cleanString(row["Current Department"]);
-                    const phase = cleanString(row["Phase"]) || "General";
-                    const func = cleanString(row["Functions"]) || "Operations";
-                    
+                // Helper to check circular reporting using Employee ID
+                const createsCycle = (empId, managerId) => {
+                    let currentManagerId = managerId;
+                    let visited = new Set();
+                    while (currentManagerId && !visited.has(currentManagerId)) {
+                        if (currentManagerId === empId) return true;
+                        visited.add(currentManagerId);
+                        const managerNode = processedEmployees.find(r => getRowValue(r, "Employee Id", "Employee ID") === currentManagerId);
+                        if (!managerNode) break;
+                        
+                        const nextManagerId = cleanString(getRowValue(managerNode, "Direct Reporting Manager Employee Id", "Reporting Manager ID", "Manager ID"));
+                        
+                        if (nextManagerId && nextManagerId !== "Unknown" && nextManagerId !== "N/A" && nextManagerId !== "") {
+                            currentManagerId = nextManagerId;
+                        } else {
+                            currentManagerId = null;
+                        }
+                    }
+                    return false;
+                };
+
+                // Step 4: Process Categorical Structure and Employees
+                processedEmployees.forEach(row => {
+                    const id = getRowValue(row, "Employee Id", "Employee ID");
+                    const name = cleanString(getRowValue(row, "Full Name", "Name"));
+                    const desig = cleanString(getRowValue(row, "Current Designation", "Designation"));
+                    const deptName = cleanString(getRowValue(row, "Current Department", "Department"));
+                    const phase = cleanString(getRowValue(row, "Phase")) || "General";
+                    const func = cleanString(getRowValue(row, "Functions", "Function")) || "Operations";
+
                     const phaseId = `Phase_${phase}`;
                     const funcId = `${phaseId}_Func_${func}`;
                     const deptId = `${funcId}_Dept_${deptName}`;
 
-                    // Handle Categorical Path
-                    if (!nodeMap.has(phaseId)) { nodes.push({ id: phaseId, parentId: "Root", name: phase, type: "phase" }); nodeMap.add(phaseId); }
-                    if (!nodeMap.has(funcId)) { nodes.push({ id: funcId, parentId: phaseId, name: func, type: "function" }); nodeMap.add(funcId); }
-                    if (!nodeMap.has(deptId)) {
-                        nodes.push({ id: deptId, parentId: funcId, name: deptName, type: "department" });
-                        nodeMap.add(deptId);
-                    }
+                    // Ensure Categorical Nodes Exist
+                    if (!nodeMap.has(phaseId)) { nodes.push({ id: phaseId, parentId: "Root", name: phase, type: "phase", reportees: 0, vacancies: 0 }); nodeMap.add(phaseId); }
+                    if (!nodeMap.has(funcId)) { nodes.push({ id: funcId, parentId: phaseId, name: func, type: "function", reportees: 0, vacancies: 0 }); nodeMap.add(funcId); }
+                    if (!nodeMap.has(deptId)) { nodes.push({ id: deptId, parentId: funcId, name: deptName, type: "department", reportees: 0, vacancies: 0 }); nodeMap.add(deptId); }
 
-                    // Determine Parent
-                    let parentId = deptId; // Default fallback to department node
-
-                    if (row._isDeptHead) {
-                        // Dept Heads always sit under the Department Node
-                        parentId = deptId;
-                    } else {
-                        // Strict Reporting Manager Rule for everyone else
-                        if (managerName && nameToIdMap[managerName]) {
-                            parentId = nameToIdMap[managerName];
-                        } else if (deptHeads[deptName]) {
-                            // Fallback to Dept Head if manager not found
-                            parentId = deptHeads[deptName]["Employee Id"];
+                    let finalParentId = deptId;
+                    
+                    // Crucial Fix: Link using the exact Manager ID instead of name matching!
+                    const managerId = cleanString(getRowValue(row, "Direct Reporting Manager Employee Id", "Reporting Manager Employee Id", "Manager ID"));
+                    
+                    if (managerId && managerId !== "Unknown" && managerId !== "N/A" && managerId !== "") {
+                        const managerObj = processedEmployees.find(m => cleanString(getRowValue(m, "Employee Id", "Employee ID")) === managerId);
+                        if (managerObj) {
+                            if (managerId !== id && !createsCycle(id, managerId)) {
+                                finalParentId = managerId;
+                            }
                         }
                     }
 
-                    const pInfo = powerMap[desig.toUpperCase()] || { level: 99 };
                     nodes.push({
                         id: id,
-                        parentId: parentId,
+                        parentId: finalParentId,
                         name: name,
                         employeeName: name,
                         employeeId: id,
                         designation: desig,
-                        type: (name === "Vacant Position") ? "vacancy" : "employee",
-                        level: pInfo.level,
+                        type: (name.toLowerCase().includes("vacant")) ? "vacancy" : "employee",
+                        level: row._level,
                         reportees: 0,
                         vacancies: 0
                     });
                 });
 
-                // Step 4: Final Count Calculations
+                // Step 5: Final Count Calculations (Aggregation)
                 const nodeLookup = {};
                 nodes.forEach(n => nodeLookup[n.id] = n);
                 nodes.forEach(n => {
@@ -637,13 +656,14 @@
                         let curr = nodeLookup[n.parentId];
                         while (curr) {
                             if (n.type === 'vacancy') curr.vacancies++;
-                            else curr.reportees++;
+                            else if (n.type === 'employee') curr.reportees++;
                             if (!curr.parentId) break;
                             curr = nodeLookup[curr.parentId];
                         }
                     }
                 });
 
+                console.log("Chart Nodes Generated:", nodes.length);
                 renderChart(nodes);
                 populateDropdowns();
                 loadingEl.style.display = 'none';
@@ -669,7 +689,7 @@
                 .linkUpdate(function (d, i, arr) {
                     const isDark = document.body.classList.contains('dark-theme');
                     const color = isDark ? '#0ea5e9' : '#6366f1';
-                    
+
                     d3.select(this)
                         .attr('stroke', color)
                         .attr('stroke-width', isDark ? 3 : 2)
@@ -732,9 +752,12 @@
         window.closeModal = function (id) { document.getElementById(id).style.display = 'none'; };
 
         function populateDropdowns() {
-            const depts = [...new Set(sheet1Data.map(r => cleanString(r["Current Department"])).filter(d => d !== "Unknown"))];
-            const desigs = [...new Set(sheet1Data.map(r => cleanString(r["Current Designation"])).filter(d => d !== "Unknown"))];
-            const managers = sheet1Data.map(r => ({ name: cleanString(r["Full Name"]), id: r["Employee Id"] })).filter(m => m.name !== "Vacant Position");
+            const depts = [...new Set(sheet1Data.map(r => cleanString(r["Current Department"] || r["Department"])).filter(d => d !== "Unknown"))];
+            const desigs = [...new Set(sheet1Data.map(r => cleanString(r["Current Designation"] || r["Designation"])).filter(d => d !== "Unknown"))];
+            const managers = sheet1Data.map(r => ({
+                name: cleanString(r["Full Name"] || r["Name"]),
+                id: r["Employee Id"] || r["Employee ID"]
+            })).filter(m => m.name !== "Vacant Position");
 
             const setupSelect = (id, options) => {
                 const el = document.getElementById(id);
@@ -744,19 +767,27 @@
             };
 
             setupSelect('vac-dept', depts); setupSelect('vac-desig', desigs);
-            setupSelect('vac-manager', managers.map(m => ({ label: `${m.name} (${m.id})`, value: m.name })));
-            setupSelect('upd-func', [...new Set(sheet1Data.map(r => cleanString(r["Functions"])))]);
+            setupSelect('vac-manager', managers.map(m => ({ label: `${m.name} (${m.id})`, value: `${m.id}|||${m.name}` })));
+            setupSelect('upd-func', [...new Set(sheet1Data.map(r => cleanString(r["Functions"] || r["Function"])))]);
             setupSelect('upd-phase', [...new Set(sheet1Data.map(r => cleanString(r["Phase"])))]);
             setupSelect('upd-cadre', ["Management", "Non-Management", "Staff", "Worker"]);
         }
 
         document.getElementById('add-vacancy-form').onsubmit = async (e) => {
             e.preventDefault();
+            const managerVal = document.getElementById('vac-manager').value;
+            const parts = managerVal ? managerVal.split('|||') : ["", ""];
+            const managerId = parts[0] || "";
+            const managerName = parts[1] || "";
+
             await submitToSheet({
                 action: "addVacancy",
                 department: document.getElementById('vac-dept').value,
                 designation: document.getElementById('vac-desig').value,
-                reportingManager: document.getElementById('vac-manager').value
+                reportingManager: managerName,
+                reportingManagerId: managerId,
+                "Direct Reporting Manager Name": managerName,
+                "Direct Reporting Manager Employee Id": managerId
             });
             closeModal('add-vacancy-modal');
         };
@@ -794,7 +825,7 @@
             const loadingEl = document.getElementById('loading');
             loadingEl.style.display = 'block';
             loadingEl.innerText = "Syncing with Cloud Database...";
-            
+
             try {
                 await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
@@ -803,14 +834,14 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(data)
                 });
-                
+
                 // Real-time Refresh
                 setTimeout(async () => {
                     await initChart();
                     alert("Sync Success: Data updated in real-time.");
                 }, 1500);
-            } catch (err) { 
-                alert("Submission failed."); 
+            } catch (err) {
+                alert("Submission failed.");
                 loadingEl.style.display = 'none';
             }
         }
